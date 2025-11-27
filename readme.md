@@ -1,0 +1,2 @@
+# descripcion:
+Turbo-disco es una base de datos ligera y modular para gestionar direcciones IP en entornos de pentesting, ayudando a organizar escenarios de pivoting y mantener un registro claro de los objetivos, posee capacidades para sugerir comandos al operador en escenarios específicos para ayudar a mapear el nivel de ruido que genera en una prueba de penetración mediante un sistema de puntos además de consejos a seguir para mantener un perfil bajo durante las intrusiones de forma similar a herramientas como bloodhound
