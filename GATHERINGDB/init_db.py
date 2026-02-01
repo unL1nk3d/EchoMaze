@@ -1,5 +1,5 @@
 from GATHERINGDB.dao import GenericDAO,Transaction,log
-from GATHERINGDB.model import IPNode,Ports
+from GATHERINGDB.model import IPNode,Ports,Templates
 import sqlite3
 import os
 class DatabaseInitializer:
@@ -11,6 +11,7 @@ class DatabaseInitializer:
             with Transaction(connection,dao.conn) as cursor:
                 cursor.execute(IPNode.create_table())
                 cursor.execute(Ports.create_table())
+                cursor.execute(Templates.create_table())
     @classmethod
     def check_db_created(cls,core,dao):
         try:

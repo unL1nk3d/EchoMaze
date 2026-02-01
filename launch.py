@@ -7,15 +7,28 @@ from UI.ui import run_ui
 from UI.models import GenericModel,Themes
 from core import Core, PORT_SERVICE_MAP
 from commands import Commands
+from cheatIngestor.core import IngestorUseCase
+from cheatIngestor.adapters.drivers.DocumentIngestorImpl import DocumentIngestorImp
+from cheatIngestor.adapters.drivens.RepositoryImpl import Repository
+from cheatIngestor.adapters.drivers.Autocomplete import AutoCompleter
+from cheatIngestor.models.repository import Configurator
 
 def build_core_stack():
     dao = GenericDAO()
     crud = CRUD_GATHERINGDB(dao)
     core = Core(crud, PORT_SERVICE_MAP)
     cmd = Commands(core)
-    generic = GenericModel(repository=core, commands=cmd)
-    return dao, crud, core, cmd, generic
-
+    # drivens 
+    repository = Repository()
+    configurator = Configurator(True, repository, dao)
+    repository.initialize_repository(configurator)
+    # drivers 
+    auto = AutoCompleter(repository=repository)
+    cli_ingestor = DocumentIngestorImp(repository=repository)
+    
+    ingestor_use_case = IngestorUseCase(documents=cli_ingestor,auto=auto) 
+    generic = GenericModel(repository=core, commands=cmd, ingestor=auto)
+    return dao, crud, core, cmd, generic,cli_ingestor
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Launcher for the HTB workspace')
@@ -23,11 +36,20 @@ def main(argv=None):
     parser.add_argument('--init-db', action='store_true', help='Initialize the database (create tables)')
     parser.add_argument('--import-from-nmap', action='store_true', help='Parse nmap_scan.gnmap (or file specified with --nmap-file) and import results')
     parser.add_argument('--nmap-file', type=str, default='nmap_scan.gnmap', help='Path to greppable nmap file')
+    parser.add_argument('--ingest', type=str, help='Ingest a JSON document for cheatsheets')
+    parser.add_argument('--search', type=str, help='Search for techniques by keyword')
     parser.add_argument('--reload-from-directory', action='store_true', help='Reload IPs from the current directory')
-
+    ingestor = parser.add_subparsers(title='ingestor',description='ingestor commands')
+    i_sub = ingestor.add_parser('ingest')
+    i_sub.add_argument('--document',help='json document to ingest see examples at the documentation')
+    i_sub.add_argument('--drop',help='drop all data saved on the database',action='store_true')
+    
+    
+    
+    
     args = parser.parse_args(argv)
 
-    dao, crud, core, cmd, generic = build_core_stack()
+    dao, crud, core, cmd, generic,cli_ingestor = build_core_stack()
 
     # initialize DB explicitly
     if args.init_db:
@@ -43,6 +65,16 @@ def main(argv=None):
     if args.reload_from_directory:
         cmd.reload_from_directory()
         print('[*] reload_from_directory completed')
+
+    # ingest document
+    if args.ingest:
+        cli_ingestor.ingestJsonDocument(args.ingest)
+        print('[*] Document ingested')
+
+    # search techniques
+    if args.search:
+        result = cli_ingestor.search_techniques(args.search)
+        print(f'[*] Search results: {result}')
 
     # run UI if requested
     if args.ui:

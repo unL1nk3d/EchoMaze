@@ -33,7 +33,16 @@ pentesting reales.
 
 
 # PROCESS
----
+
+
+
+* Quiero tener una terminal que directamente me proponga comandos para poder realizar pivoring 
+
+* para emitir sugerencias quiero que estas se carguen desde un cheatsheet con un formato especifico
+    * modificar el launch.py para agregar un 
+* quiero que los cheatsheets se guarden en una base de datos relacional sql para facilitar las consutlas posterior a ser ingeridos por el cheatingestor
+
+# DONE
 
 * Quiero que dependiendo de una direccion ip seleccionada se puedan emitir sugerencias sobre como realizar pivoting para llegar hasta esa direccion ip
     * para emitir sugerencias quiero que estas se carguen desde un cheatsheet con un formato especifico
@@ -67,4 +76,28 @@ datos local para consultarlas y actualizarlas fácilmente.
 automáticamente en un directorio estructurado con sus 
 puertos y servicios.
 
+* Quiero que las IPs escaneadas se almacenen en una base de 
+datos local para consultarlas y actualizarlas fácilmente.
+    * buscar
+    * actualizar
+    * insertar
+        * custom errors
+        * omitir ips que ya existan
+    * resolver bug de que cache no almacena direciones ip que no se hayan cargado desde nmap
+
+* quiero que se pueda editar el nivel de profunidad a mostrar para cambiar dinamicamente entre direcciones ip hijas
+
+* Quiero que se pueda modificar dinamicamente al pulsar + el nivel de profundidad a ir en el arbol de direcciones ip 
+
+* Quiero que se muestre en el TUI las direcciones IP hijas de una direccion ip padre 
 ---
+
+* Quiero que cada dirección IP escaneada se convierta 
+automáticamente en un directorio estructurado con sus 
+puertos y servicios.
+
+---
+
+* Quiero que dependiendo de una direccion ip seleccionada se puedan emitir sugerencias sobre como realizar pivoting para llegar hasta esa direccion ip
+
+* Quiero poder pegar los comandos de sugerencia en mi terminal de preferencia

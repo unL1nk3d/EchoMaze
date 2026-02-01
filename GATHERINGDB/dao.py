@@ -150,3 +150,14 @@ class GenericDAO:
                 cursor.execute(sql,valores)
                 regis = [ data(*reg) if reg else None for reg in cursor.fetchall()]
                 return regis
+    @classmethod
+    def seleccionarCoincidenciaFTS(cls,data:T,text:str) -> list:
+        """
+        nota dejamos aqui una consulta hardcodeada para no romper el patron de arquitectura
+        limpia que usa cheatingestor ademas esto es un poco mas eificiente
+        """
+        with cls.conn() as connection:
+            with Transaction(connection,cls.conn) as cursor:
+                sql = f"SELECT * FROM templates_fts WHERE templates_fts MATCH ?"
+                cursor.execute(sql, (text,))
+                return cursor.fetchall()

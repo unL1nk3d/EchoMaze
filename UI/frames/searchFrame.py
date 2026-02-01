@@ -1,5 +1,5 @@
 
-from asciimatics.widgets import Frame, Layout, Label, ListBox, Divider,TextBox
+from asciimatics.widgets import Frame, Layout, Label, ListBox, Divider,Text
 from asciimatics.screen import Screen
 from asciimatics.event import KeyboardEvent
 from asciimatics.exceptions import StopApplication, NextScene
@@ -15,7 +15,7 @@ class SearchFrame(Frame):
         layout = Layout([1])
         self.add_layout(layout)
         layout.add_widget(Label("Buscar IP:"))
-        self.search_box = TextBox(1, name="search", on_change=self._on_search_change)
+        self.search_box = Text(name="search", on_change=self._on_search_change)
         layout.add_widget(self.search_box)
         layout.add_widget(Divider())
 
@@ -31,7 +31,7 @@ class SearchFrame(Frame):
 
     def _on_search_change(self):
         self.search_text = self.search_box.value.lower()
-        self.filtered_protocols = [p for p in protocols if self.search_text in p.lower()]
+        self.filtered_protocols = [p for p in self.model.protocols if self.search_text in p.lower()]
         self.result_list.options = [(p, i) for i, p in enumerate(self.filtered_protocols)]
 
     def process_event(self, event):

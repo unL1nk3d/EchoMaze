@@ -148,6 +148,10 @@ class TreeIPFrame(Frame):
 
         self.fix()
         self._build_tree()
+    
+
+    
+
     @property
     def _selected_idx(self):
         return self.__selected_idx
@@ -392,11 +396,27 @@ class TreeIPFrame(Frame):
                 raise NextScene("protocols")
             elif event.key_code in [ord('S'), ord('s')]:
                 raise NextScene("search")
+            elif event.key_code == ord('j'):
+                self._show_suggestions()
+                return None
+            elif event.key_code == ord('m'):
+                self._show_terminal()
+                return None
 
         return super(TreeIPFrame, self).process_event(event)
     def _update_status(self, message):
         """Actualizar etiqueta de estado"""
         self.status_label.text = message
+
+    def _show_suggestions(self):
+        """Mostrar sugerencias de pivoting para la IP seleccionada"""
+        from UI.frames.SuggestionsFrame import SuggestionsFrame
+        self._scene.add_effect(SuggestionsFrame(self._screen, self.model))
+        # arriba se agrega como un popup 
+    def _show_terminal(self):
+        """Mostrar terminal integrada para comandos"""
+        raise NextScene("terminal")  # Asumiendo que hay una escena "terminal"
+
 
 def demo(screen, old_scene):
 # ...en la función demo()...

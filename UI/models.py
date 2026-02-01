@@ -145,10 +145,11 @@ class Observable:
             observer.observerUpdate(**kwargs)
             
 class GenericModel(Observable):
-    def __init__(self, repository, commands=None, port_service_map=None):
+    def __init__(self, repository, commands=None, port_service_map=None, ingestor=None):
         super().__init__()
         self.repo = RepositoryModel(repository)
         self.cmd = CommandModel(commands)
+        self.ingestor = ingestor
         self.mapper = UIMapper(port_service_map=port_service_map)
         self._cachered = []
         self._just_parents = []
@@ -218,6 +219,42 @@ class GenericModel(Observable):
         return final_list
     # es necesario crear un modelo
     # muy similar al que maneja la intefaz
+    
+    def get_suggestions_for_ip(self, ip):
+        if self.ingestor:
+            # Obtener puertos de la IP para buscar sugerencias relevantes
+            ports = []
+            for item in self.cachered_ips:
+                if item[0] == ip:
+                    ports = item[2]  # protocols
+                    break
+            # Buscar templates relacionados con los servicios o pivoting
+            suggestions = []
+            for service in ports:
+                result = self.ingestor.searchCoincidence(service.lower())
+                if result and result.templates:
+                    suggestions.extend(result.templates)
+            # Si no hay específicos, buscar generales de pivoting
+        return []
+    def get_generic_suggestions_for_ip(self,ip):
+        suggestions = []
+        result = self.ingestor.searchCoincidence("pivoting")
+        if result and result.templates:
+            suggestions.extend(result.templates)
+        return suggestions
+    
+    def copy_to_clipboard(self, text):
+        import subprocess
+        try:
+            # Usar clip.exe en Windows
+            subprocess.run(['clip'], input=text, text=True, check=True)
+        except Exception as e:
+            # Fallback, intentar pyperclip si está instalado
+            try:
+                import pyperclip
+                pyperclip.copy(text)
+            except ImportError:
+                pass  # No hacer nada si no se puede
     
 
 from collections import defaultdict
@@ -388,3 +425,9 @@ class GenericTreeModel:
         """Recargar datos desde una instancia CRUD_GATHERINGDB"""
         self.mapper.from_crud(crud)
         self._cachered = self.mapper.value
+    
+    def get_suggestions_for_ip(self, ip):
+        if self.ingestor:
+            # Buscar templates relacionados con pivoting para la IP
+            result = self.ingestor.searchCoincidence("pivoting")
+        return result
