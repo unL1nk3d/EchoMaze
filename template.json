@@ -1,0 +1,12 @@
+{
+  "technique": "T1078",
+  "name": "Valid Accounts",
+  "templates": [
+    {
+      "desc": "SSH login",
+      "linux": "ssh user@TARGET_IP",
+      "windows": "ssh user@TARGET_IP",
+      "noise_estimate": 1
+    }
+  ]
+}

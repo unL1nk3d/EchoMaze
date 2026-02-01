@@ -10,10 +10,10 @@ class DocumentIngestorImp(ForDocumentIngestion):
     def ingestJsonDocument(self,document:str) -> Technique:
         # document at this point should be a path 
         try:
-            with open(self.document,'r') as rds:
-                result = json.loads(rds.read())
+            with open(document,'r') as rds:
+                document = rds.read()
         except json.JSONDecodeError:
             raise ValueError('File Error JSON cant parse the data!')
-        except:
-            raise ValueError('The file cant be loaded!')
+        except Exception as e :
+            raise ValueError(f'The file cant be loaded! {e}')
         return self.repository.save_document(document)

@@ -28,7 +28,7 @@ def build_core_stack():
     
     ingestor_use_case = IngestorUseCase(documents=cli_ingestor,auto=auto) 
     generic = GenericModel(repository=core, commands=cmd, ingestor=auto)
-    return dao, crud, core, cmd, generic,cli_ingestor
+    return dao, crud, core, cmd, generic,cli_ingestor,auto,repository
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Launcher for the HTB workspace')
@@ -43,13 +43,14 @@ def main(argv=None):
     i_sub = ingestor.add_parser('ingest')
     i_sub.add_argument('--document',help='json document to ingest see examples at the documentation')
     i_sub.add_argument('--drop',help='drop all data saved on the database',action='store_true')
+    i_sub.add_argument('--list',help='list all templates saved on the database',action='store_true')
     
     
     
     
     args = parser.parse_args(argv)
 
-    dao, crud, core, cmd, generic,cli_ingestor = build_core_stack()
+    dao, crud, core, cmd, generic,cli_ingestor,auto,repository = build_core_stack()
 
     # initialize DB explicitly
     if args.init_db:
@@ -65,17 +66,6 @@ def main(argv=None):
     if args.reload_from_directory:
         cmd.reload_from_directory()
         print('[*] reload_from_directory completed')
-
-    # ingest document
-    if args.ingest:
-        cli_ingestor.ingestJsonDocument(args.ingest)
-        print('[*] Document ingested')
-
-    # search techniques
-    if args.search:
-        result = cli_ingestor.search_techniques(args.search)
-        print(f'[*] Search results: {result}')
-
     # run UI if requested
     if args.ui:
         
@@ -88,6 +78,18 @@ def main(argv=None):
             print("[!] No data available to display in UI. Please import data first. using --import-from-nmap or --reload-from-directory")
             exit(1)
         run_ui(generic)
+
+    if args.document:
+        cli_ingestor.ingestJsonDocument(args.document)
+        print('[*] Document ingested')
+
+    # search techniques
+    if args.search:
+        result = auto.search_techniques(args.search)
+        print(f'[*] Search results: {result}')
+    if args.list:
+        [ print(vars(x)) for x in repository.select_all_templates()]
+        
 
 
 if __name__ == '__main__':
