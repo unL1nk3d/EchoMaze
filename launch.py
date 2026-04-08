@@ -78,7 +78,7 @@ def main(argv=None):
             print("[!] No data available to display in UI. Please import data first. using --import-from-nmap or --reload-from-directory")
             exit(1)
         run_ui(generic)
-
+    """
     if args.document:
         cli_ingestor.ingestJsonDocument(args.document)
         print('[*] Document ingested')
@@ -89,7 +89,7 @@ def main(argv=None):
         print(f'[*] Search results: {result}')
     if args.list:
         [ print(vars(x)) for x in repository.select_all_templates()]
-        
+    """
 
 
 if __name__ == '__main__':

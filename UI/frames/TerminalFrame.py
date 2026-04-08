@@ -5,9 +5,10 @@ from asciimatics.exceptions import NextScene
 from asciimatics.parsers import AnsiTerminalParser, Parser
 from asciimatics.screen import Canvas
 from asciimatics.event import KeyboardEvent
+
 import subprocess
 import threading
-
+import queue
 class SimpleCommandModel:
     def __init__(self):
         self.command = ""
@@ -15,7 +16,9 @@ class SimpleCommandModel:
         self.onChange = False
         self.SUCCRESS = ""
         self.ERRORS = ""
-
+    def flush(self):
+        self.SUCCRESS = ""
+        self.ERRORS = ""
     def run(self):
         if self.command:
             try:
@@ -55,20 +58,31 @@ class TerminalWidget(Widget):
             (Screen.KEY_PAGE_UP, self.on_page_up),
             (Screen.KEY_PAGE_DOWN, self.on_page_down),
             (Screen.KEY_HOME, "khome"),
-            (Screen.KEY_END, self.on_scape),
+            #(Screen.KEY_END, self.on_scape),
             (Screen.KEY_DELETE, self.on_delete),
             (Screen.KEY_BACK, self.on_back)
         ]:
             self._map[k] = v
         self._map[Screen.KEY_TAB] = "\t".encode()
+        self._command_queue = queue.Queue()  # Cola para comandos secuenciales
+        self._lock = threading.Lock()  # Agrega lock para sincronizar acceso
+        self._update_queue = queue.Queue()  # Cola para updates de UI
+        self.suggestions = []  # Lista de sugerencias
+        self._current_input = ""  # Buffer para input actual
+        self._current_suggestion = None  # Sugerencia actual
+        self._running = True  # Flag para controlar el thread
+        self._processing_thread = threading.Thread(target=self._process_commands,daemon=True)
+        self._processing_thread.start()
 
     def on_key_up(self):
         if self._cursor_y != 0:
             self._cursor_y -= 1
+            self.on_page_up()
 
     def on_key_down(self):
         if self._cursor_y != self._canvas.height:
             self._cursor_y += 1
+            self.on_page_down()
 
     def on_scape(self):
         self._cursor_y += 1
@@ -109,6 +123,9 @@ class TerminalWidget(Widget):
                 char, colour, attr, bg = details
                 attr |= Screen.A_REVERSE
                 self._frame.canvas.print_at(chr(char), x, y, colour, attr, bg)
+        # Mostrar sugerencia si existe
+        if self._current_suggestion:
+            self._print_at(f"Suggestion: {self._current_suggestion}", 0, self._cursor_y + 1)
 
     def _print_at(self, text, x, y):
         self._canvas.print_at(
@@ -127,6 +144,26 @@ class TerminalWidget(Widget):
         self.prompit(start_y=1)
         self._cursor_x = 4
         self._cursor_y = 1
+        self._current_input = ""
+        self._current_suggestion = None
+
+    def close(self):
+        """Detiene el thread daemon y limpia las colas."""
+        self._running = False
+        # Limpiar colas para evitar procesamiento residual
+        while not self._command_queue.empty():
+            try:
+                self._command_queue.get_nowait()
+            except queue.Empty:
+                break
+        while not self._update_queue.empty():
+            try:
+                self._update_queue.get_nowait()
+            except queue.Empty:
+                break
+        # Esperar a que el thread termine si es necesario
+        if self._processing_thread.is_alive():
+            self._processing_thread.join(timeout=1.0)
 
     def required_height(self, offset, width):
         return self._required_height
@@ -221,23 +258,54 @@ class TerminalWidget(Widget):
     def value(self, arg):
         if arg != '' and isinstance(arg, str):
             self._value.append(arg)
-
+    def _process_commands(self):
+        """Procesa comandos en un thread separado."""
+        while self._running:
+            try:
+                cmd = self._command_queue.get(timeout=0.1)
+                if cmd:
+                    self._model.command = cmd
+                    self._model.run()  # Ejecuta sincrónicamente
+                    self._command_queue.task_done()
+                    self._model.flush()
+            except queue.Empty:
+                continue
+        
     def process_event(self, event):
         if self._cursor_y - self._canvas.start_line >= self._h:
             self._canvas.scroll()
         if isinstance(event, KeyboardEvent):
             if event.key_code > 0:
-                if event.key_code == 13:
+                if event.key_code == 13:# Enter
                     self.value = self.get_line(start=4, cursor=self._cursor_x)
                     if self.value:
                         for cmd in self.value:
-                            self._model.command = cmd
-                            threading.Thread(target=self._model.run).start()
+                            self._command_queue.put(cmd)
+                        self.value = []
+                        
                     self._cursor_x = 4
                     self.on_scape()
                     self.prompit(start_y=self._cursor_y)
+                    self._current_input = ""  # Reset input buffer
+                    self._current_suggestion = None
+                elif event.key_code == 9:  # Tab
+                    if self._current_suggestion:
+                        # Autocomplete
+                        self._current_input = self._current_suggestion
+                        self._cursor_x = 4 + len(self._current_input)
+                        # Clear line and reprint
+                        self._print_at(' ' * (self._w - 4), 4, self._cursor_y)
+                        self._print_at(self._current_input, 4, self._cursor_y)
+                        self._current_suggestion = None
                 else:
-                    self._add_stream(chr(event.key_code))
+                    char = chr(event.key_code)
+                    if char.isprintable():
+                        self._current_input += char
+                        self._update_queue.put(char)
+                        # Update suggestion
+                        self._current_suggestion = next((s for s in self.suggestions if s.startswith(self._current_input)), None)
+                        #print(f"{self._current_input}")
+                    self._add_stream(chr(event.key_code))                        
             elif event.key_code in self._map:
                 req = self._map.get(event.key_code)
                 if callable(req):
@@ -285,11 +353,11 @@ class TerminalFrame(Frame):
     def observerUpdate(self, **kwargs):
         if 'selected_ip' in kwargs:
             self._load_suggestions()
+            self.terminal.suggestions = self.suggestions
 
     def _on_suggestion_select(self):
         selected = self.suggestions_list.value
         if selected is not None and selected < len(self.suggestions):
-            # Instead of setting command, perhaps print to terminal
             self.terminal._add_stream(self.suggestions[selected] + '\n')
 
     def _load_suggestions(self):
@@ -311,6 +379,7 @@ class TerminalFrame(Frame):
         else:
             self.suggestions = ["Select an IP to get pivoting suggestions"]
         self._update_suggestions()
+        self.terminal.suggestions = self.suggestions
 
     def _update_suggestions(self):
         options = [(sug, i) for i, sug in enumerate(self.suggestions)]
@@ -320,7 +389,9 @@ class TerminalFrame(Frame):
         self.terminal.dataIn = output
 
     def _clear_terminal(self):
+        self.cmd_model.flush()
         self.terminal.reset()
+
 
     def process_event(self, event):
         """
@@ -347,5 +418,7 @@ class TerminalFrame(Frame):
         return super().process_event(event)
 
     def _close(self):
+        self.terminal.close()
+        self._clear_terminal()
         self.model.detach(self)
         raise NextScene('main')
