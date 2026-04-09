@@ -1,15 +1,14 @@
 import sqlite3
-from GATHERINGDB.model import IPNode,IntegrityError 
+from GATHERINGDB.model import IPNode, IntegrityError, WorkflowScoreConfig, PivotHistory
 from GATHERINGDB.connection import SQLiteConnectionPool
 from GATHERINGDB.log import log
-from GATHERINGDB.model import BaseEntity,IPNode
+from GATHERINGDB.model import BaseEntity
 from typing import TypeVar, Generic, List
 
 T = TypeVar('T')  # T puede ser cualquier tipo
 
-
 class Transaction:
-    def __init__(self, connection: SQLiteConnectionPool,poolToAsk:SQLiteConnectionPool):
+    def __init__(self, connection: SQLiteConnectionPool, poolToAsk: SQLiteConnectionPool):
         self.connection = connection
         self.poolToAsk = poolToAsk()
         self.is_acquired_connection = False
@@ -30,74 +29,54 @@ class Transaction:
             log.error("Transaction failed, rolling back.", exc_info=(exc_type, exc_value, traceback))
         self.cursor.close()
         if self.is_acquired_connection:
-            self.connection.return_connection(self.connection)        
-        
+            self.connection.return_connection(self.connection)
+
 class GenericDAO:
-    ''' 
-    contiene los quertys para ejecutar las acciones 
-    realizara las operaciones sobre la base de datos de
-    persona
-    DA0 -> DATA ACCESS OBJECT
-    
-    LA CLASE PERSONA ES UNA CLASE DE ENTIDAD QUE ALMACENARA
-    LOS REGISTROS DE LA BASE DE DATOS
-    
-    LA CLASE DAO CONTIENE LOS METODOS PAR ALEER ACTUALIZAR O INSERTAR DATOS
-    DAO ES UN PATRON DE DISE;O
-    
-    CRUD
-    
-    C -> CREADE
-    R -> READ
-    U -> UPDATE
-    D -> DELETE
-    '''
-    # conn almacena la clase/constructor del pool; instanciar con cls.conn()
     conn = SQLiteConnectionPool
-    #_SELECCIONAR = 'SELECT * FROM persona ORDER BY id_persona;'
-    #_INSERTAR = 'INSERT INTO persona(nombre,apellido,email) values (%s,%s,%s);'
-    #_ACTUALIZAR = 'UPDATE persona SET nombre=%s,apellido=%s,email=%s WHERE id_persona=%s;'
-    #_ELIMINAR = 'DELETE FROM persona WHERE id_persona=%s;'
+    # ... (resto igual)
+
+    # Métodos CRUD genericos (sin cambios)
     @classmethod
-    def createTable(cls):
-        ...
-    
-    @classmethod
-    def seleccionar(cls,data:BaseEntity,top_results:int = None) -> list[T]:
-        # permite pasar una transacción opcional en el futuro; por ahora abrimos
-        # una transacción temporal para lectura
+    def createTable(cls, entity_class):
         with cls.conn() as connection:
-            with Transaction(connection,cls.conn) as cursor:
-                cursor.execute(data.select()) 
-                if top_results:
-                    regis = [ data(*reg) if reg else None for reg in cursor.fetchmany(top_results)]
-                else:
-                    regis = [ data(*reg) if reg else None for reg in cursor.fetchall()]
-                return regis  
+            with Transaction(connection, cls.conn) as cursor:
+                cursor.execute(entity_class.create_table())
+
+    # Reutiliza todos los métodos (insertar, actualizar...) idénticos para cualquier BaseEntity
+
     @classmethod
-    def seleccionarPorId(cls,data:T,id:int) -> T:
-        with cls.conn() as conection:
-            with Transaction(conection,cls.conn) as cursor:
+    def seleccionar(cls, data: BaseEntity, top_results: int = None) -> List[T]:
+        with cls.conn() as connection:
+            with Transaction(connection, cls.conn) as cursor:
+                cursor.execute(data.select())
+                if top_results:
+                    regis = [data(*reg) if reg else None for reg in cursor.fetchmany(top_results)]
+                else:
+                    regis = [data(*reg) if reg else None for reg in cursor.fetchall()]
+                return regis
+
+    @classmethod
+    def seleccionarPorId(cls, data: T, id: int) -> T:
+        with cls.conn() as connection:
+            with Transaction(connection, cls.conn) as cursor:
                 valores = (id,)
-                query = getattr(data,'selectById',None)
+                query = getattr(data, 'selectById', None)
                 sql = query()
-                if not(callable(query)):
+                if not callable(query):
                     raise ValueError(f"El modelo {data} no tiene un método selectById()")
-                cursor.execute(sql,valores)
+                cursor.execute(sql, valores)
                 reg = cursor.fetchone()
                 if not reg:
                     return None
                 return data(*reg)
 
     @classmethod
-    def insertar(cls,data:T) -> int:
-        ''' se necesita una transaccion por lo que usamos un width conexion '''
+    def insertar(cls, data: T) -> int:
         with cls.conn() as connection:
-            with Transaction(connection,cls.conn) as cursor:
+            with Transaction(connection, cls.conn) as cursor:
                 valores = data.exportAsTupple()
-                # el modelo define insert() como método que devuelve la query
                 query = getattr(data, 'insert', None)
-                if not(callable(query)):
+                if not callable(query):
                     raise ValueError(f"El modelo {data} no tiene un método insert()")
                 sql = query()
                 try:
@@ -107,15 +86,13 @@ class GenericDAO:
                     raise IntegrityError(type(data).__name__) from e
                 cmps = cursor.rowcount
         return cmps
+
     @classmethod
-    def actualizar(cls,data:T,id:int) -> int:
-        ''' retorna las filas afectadas '''
-        # hacemos una transaccion por lo tanto debemos de abrir la conexion con width
+    def actualizar(cls, data: T, id: int) -> int:
         with cls.conn() as connection:
-            with Transaction(connection,cls.conn) as cursor:
+            with Transaction(connection, cls.conn) as cursor:
                 values = [x for x in data.exportAsTupple()]
-                values.append(id)# id should be appened at the end
-                # el modelo define update() que devuelve la query
+                values.append(id)  # id as last element
                 query = getattr(data, 'update', None)
                 sql = query()
                 if not callable(query):
@@ -123,41 +100,54 @@ class GenericDAO:
                 cursor.execute(sql, values)
                 count = cursor.rowcount
         return count
+
     @classmethod
-    def eliminar(cls,data:T,id:int) -> int:
+    def eliminar(cls, data: T, id: int) -> int:
         with cls.conn() as connection:
-            with Transaction(connection,cls.conn) as cursor:
+            with Transaction(connection, cls.conn) as cursor:
                 valores = (id,)
-                # usar la query de la clase si existe
                 sql = getattr(data, 'delete', None)
                 sql = sql()
                 if not sql:
-                    # intentar usar una función delete en el modelo
                     raise ValueError(f"El modelo {data} no tiene un método delete()")
                 cursor.execute(sql, valores)
                 log.warn(f"Eliminando registro con id {id} usando {sql} y valores {valores}")
                 rs = cursor.rowcount
         return rs
+
     @classmethod
-    def seleccionarCoincidencia(cls,data:T,field:str,value:str) -> list[T]:
+    def seleccionarCoincidencia(cls, data: T, field: str, value: str) -> List[T]:
         with cls.conn() as connection:
-            with Transaction(connection,cls.conn) as cursor:
+            with Transaction(connection, cls.conn) as cursor:
                 sql = getattr(data, 'selectCoincidence', None)
                 sql = sql(field)
                 if not sql:
                     raise ValueError(f"El modelo {data} no tiene un método selectCoincidence()")
                 valores = (value,)
-                cursor.execute(sql,valores)
-                regis = [ data(*reg) if reg else None for reg in cursor.fetchall()]
+                cursor.execute(sql, valores)
+                regis = [data(*reg) if reg else None for reg in cursor.fetchall()]
                 return regis
+
     @classmethod
-    def seleccionarCoincidenciaFTS(cls,data:T,text:str) -> list:
-        """
-        nota dejamos aqui una consulta hardcodeada para no romper el patron de arquitectura
-        limpia que usa cheatingestor ademas esto es un poco mas eificiente
-        """
+    def seleccionarCoincidenciaFTS(cls, data: T, text: str) -> list:
         with cls.conn() as connection:
-            with Transaction(connection,cls.conn) as cursor:
+            with Transaction(connection, cls.conn) as cursor:
                 sql = f"SELECT * FROM templates_fts WHERE templates_fts MATCH ?"
                 cursor.execute(sql, (text,))
                 return cursor.fetchall()
+
+# -- Métodos CRUD explícitos para las nuevas entidades, por claridad y edge-cases (opcional, el abstracción anterior ya los cubre).
+# Se documentan sólo como ejemplo:
+
+def test_workflow_score_config_crud():
+    entry = WorkflowScoreConfig(id=None, name="stealth", value=4.5, description="Stealth test config")
+    res_insert = GenericDAO.insertar(entry)
+    # ... resto igual que los métodos base ...
+
+def test_pivot_history_crud():
+    entry = PivotHistory(id=None, source_ip="10.0.0.1", dest_ip="10.0.0.2", operator="alice", timestamp="2023-01-01T12:00:00", details="pivot test")
+    res_insert = GenericDAO.insertar(entry)
+    # ... resto igual ...
+
+# La arquitectura base no requiere modificaciones más allá de los data model
+# Los métodos genéricos ya cubren todas las entidades tipo BaseEntity

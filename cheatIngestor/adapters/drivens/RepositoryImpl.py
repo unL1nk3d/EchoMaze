@@ -2,7 +2,7 @@ from cheatIngestor.ports.drivens.forRepository import ForRepository
 from cheatIngestor.models.repository import Configurator
 from cheatIngestor.models.template import Technique,Template
 from json import loads
-from GATHERINGDB.model import Templates
+#from GATHERINGDB.model import Templates
 import sqlite3
 class Repository(ForRepository):
     _configurator:Configurator = None
@@ -13,7 +13,7 @@ class Repository(ForRepository):
         if Repository._configurator == None:
             Repository._configurator = configuration
             self.configurator:Configurator = Repository._configurator
-        
+
     def save_document(self, document:str):
         tmp = loads(document)
         # Asumir formato: {"technique": "T1021", "name": "Pivoting", "templates": [{"desc": "...", "linux": "...", "windows": "...", "noise_estimate": 5}]}
@@ -21,6 +21,9 @@ class Repository(ForRepository):
         name = tmp['name']
         for temp in tmp['templates']:
             self.insert_template(technique, name, temp["desc"], temp["linux"], temp["windows"], temp["noise_estimate"])
+        
+            
+            
 
     def search_coincidence(self, text) -> Technique:
         # Usar FTS para búsqueda
@@ -38,9 +41,9 @@ class Repository(ForRepository):
         template = Templates(technique, name, desc, linux, windows, noise_estimate)
         self.configurator.dao.insertar(template)
 
+
     def select_all_templates(self):
         return self.configurator.dao.seleccionar(Templates)
-
     def select_template_by_technique(self, technique):
         return self.configurator.dao.seleccionarCoincidencia(Templates, 'technique', technique)
 
@@ -51,3 +54,4 @@ class Repository(ForRepository):
     def delete_template(self, technique):
         # Implementar delete
         pass
+    

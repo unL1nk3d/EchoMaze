@@ -5,7 +5,7 @@ from GATHERINGDB.main import CRUD_GATHERINGDB
 from GATHERINGDB.init_db import DatabaseInitializer
 from UI.ui import run_ui
 from UI.models import GenericModel,Themes
-from core import Core, PORT_SERVICE_MAP
+from core.core import Core, PORT_SERVICE_MAP
 from commands import Commands
 from cheatIngestor.core import IngestorUseCase
 from cheatIngestor.adapters.drivers.DocumentIngestorImpl import DocumentIngestorImp
@@ -36,9 +36,9 @@ def main(argv=None):
     parser.add_argument('--init-db', action='store_true', help='Initialize the database (create tables)')
     parser.add_argument('--import-from-nmap', action='store_true', help='Parse nmap_scan.gnmap (or file specified with --nmap-file) and import results')
     parser.add_argument('--nmap-file', type=str, default='nmap_scan.gnmap', help='Path to greppable nmap file')
-    parser.add_argument('--ingest', type=str, help='Ingest a JSON document for cheatsheets')
-    parser.add_argument('--search', type=str, help='Search for techniques by keyword')
+    #parser.add_argument('--ingest', type=str, help='Ingest a JSON document for cheatsheets')
     parser.add_argument('--reload-from-directory', action='store_true', help='Reload IPs from the current directory')
+    parser.add_argument('--search', type=str, help='Search for techniques by keyword')
     ingestor = parser.add_subparsers(title='ingestor',description='ingestor commands')
     i_sub = ingestor.add_parser('ingest')
     i_sub.add_argument('--document',help='json document to ingest see examples at the documentation')
@@ -78,18 +78,16 @@ def main(argv=None):
             print("[!] No data available to display in UI. Please import data first. using --import-from-nmap or --reload-from-directory")
             exit(1)
         run_ui(generic)
-    """
-    if args.document:
+    if hasattr(args,'document') and args.document:
         cli_ingestor.ingestJsonDocument(args.document)
         print('[*] Document ingested')
 
     # search techniques
-    if args.search:
-        result = auto.search_techniques(args.search)
-        print(f'[*] Search results: {result}')
-    if args.list:
+    if hasattr(args,'search') and args.search:
+        result = auto.searchCoincidence(args.search)
+        print(f'[*] Search results: {result} {[ vars(x) for x in dict(vars(result))['templates']]}')
+    if hasattr(args,'list') and args.list:
         [ print(vars(x)) for x in repository.select_all_templates()]
-    """
 
 
 if __name__ == '__main__':

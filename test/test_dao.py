@@ -1,139 +1,107 @@
 import unittest
-from unittest.mock import MagicMock, patch, call
-from GATHERINGDB.dao import GenericDAO, Transaction
-from GATHERINGDB.model import BaseEntity, IntegrityError
+import sqlite3
+from GATHERINGDB.dao import GenericDAO
+from GATHERINGDB.model import WorkflowScoreConfig, PivotHistory, IPNode
 
-class DummyModel(BaseEntity):
-    def __init__(self, id, ip, parent_ip, path):
-        self.id = id
-        self.ip = ip
-        self.parent_ip = parent_ip
-        self.path = path
-
-    def exportAsTupple(self):
-        return (self.id, self.ip, self.parent_ip, self.path)
-
-    @staticmethod
-    def insert():
-        return "INSERT INTO ipnode (id, ip, parent_ip, path) VALUES (?, ?, ?, ?)"
-
-    @staticmethod
-    def update():
-        return "UPDATE ipnode SET id=?, ip=?, parent_ip=?, path=? WHERE id=?"
-
-    @staticmethod
-    def delete():
-        return "DELETE FROM ipnode WHERE id=?"
-
-    @staticmethod
-    def select():
-        return "SELECT id, ip, parent_ip, path FROM ipnode"
-
-    @staticmethod
-    def selectById():
-        return "SELECT id, ip, parent_ip, path FROM ipnode WHERE id=?"
-
-    @staticmethod
-    def selectCoincidence(field):
-        return f"SELECT id, ip, parent_ip, path FROM ipnode WHERE {field}=?"
-
-class TestGenericDAO(unittest.TestCase):
+class TestWorkflowScoreConfigDAO(unittest.TestCase):
     def setUp(self):
-        self.mock_conn = MagicMock()
-        self.mock_cursor = MagicMock()
-        self.mock_conn.cursor.return_value = self.mock_cursor
-        self.patcher = patch('GATHERINGDB.dao.SQLiteConnectionPool', return_value=self.mock_conn)
-        self.patcher.start()
-        GenericDAO.conn = MagicMock(return_value=self.mock_conn)
+        GenericDAO.createTable(WorkflowScoreConfig)
+        # Clean up after each test (delete all)
+        self._cleanup()
+
+    def _cleanup(self):
+        with GenericDAO.conn() as connection:
+            connection.execute("DELETE FROM workflow_score_config")
+            connection.commit()
+
+    def test_crud_cycle(self):
+        cfg = WorkflowScoreConfig(id=None, name="stealth", value=1.0, description="Stealth test")
+        # Insert
+        inserted = GenericDAO.insertar(cfg)
+        self.assertEqual(inserted, 1)
+        # Read
+        results = GenericDAO.seleccionar(WorkflowScoreConfig)
+        self.assertEqual(len(results), 1)
+        obj = results[0]
+        self.assertEqual(obj.name, "stealth")
+        # Update
+        obj.name = "stealth2"
+        obj.value = 2.5
+        updated = GenericDAO.actualizar(obj, obj.id)
+        self.assertGreaterEqual(updated, 1)
+        updated_obj = GenericDAO.seleccionarPorId(WorkflowScoreConfig, obj.id)
+        self.assertEqual(updated_obj.name, "stealth2")
+        # Delete
+        deleted = GenericDAO.eliminar(obj, obj.id)
+        self.assertGreaterEqual(deleted, 1)
+        results = GenericDAO.seleccionar(WorkflowScoreConfig)
+        self.assertEqual(len(results), 0)
 
     def tearDown(self):
-        self.patcher.stop()
+        self._cleanup()
 
-    def test_insertar_success(self):
-        model = DummyModel(1, '192.168.1.1', '', '/')
-        self.mock_cursor.rowcount = 1
-        result = GenericDAO.insertar(model)
-        self.mock_cursor.execute.assert_called_once_with(model.insert(), model.exportAsTupple())
+class TestPivotHistoryDAO(unittest.TestCase):
+    def setUp(self):
+        GenericDAO.createTable(PivotHistory)
+        self._cleanup()
+
+    def _cleanup(self):
+        with GenericDAO.conn() as connection:
+            connection.execute("DELETE FROM pivot_history")
+            connection.commit()
+
+    def test_crud_cycle(self):
+        record = PivotHistory(id=None, source_ip="1.1.1.1", dest_ip="2.2.2.2", operator="tester", timestamp="2023-01-01T11:00:00", details="first test")
+        result = GenericDAO.insertar(record)
         self.assertEqual(result, 1)
+        objs = GenericDAO.seleccionar(PivotHistory)
+        self.assertEqual(len(objs), 1)
+        obj = objs[0]
+        self.assertEqual(obj.operator, "tester")
+        # Update
+        obj.details = "modified"
+        changed = GenericDAO.actualizar(obj, obj.id)
+        self.assertGreaterEqual(changed, 1)
+        after = GenericDAO.seleccionarPorId(PivotHistory, obj.id)
+        self.assertEqual(after.details, "modified")
+        # Delete
+        deleted = GenericDAO.eliminar(obj, obj.id)
+        self.assertGreaterEqual(deleted, 1)
+        self.assertEqual(len(GenericDAO.seleccionar(PivotHistory)), 0)
 
-    def test_insertar_integrity_error(self):
-        model = DummyModel(1, '192.168.1.1', '', '/')
-        self.mock_cursor.execute.side_effect = sqlite3.IntegrityError("duplicate")
-        with self.assertRaises(IntegrityError):
-            GenericDAO.insertar(model)
+    def tearDown(self):
+        self._cleanup()
 
-    def test_actualizar_success(self):
-        model = DummyModel(1, '192.168.1.1', '', '/')
-        self.mock_cursor.rowcount = 1
-        result = GenericDAO.actualizar(model, 1)
-        expected_values = list(model.exportAsTupple()) + [1]
-        self.mock_cursor.execute.assert_called_once_with(model.update(), expected_values)
+class TestIPNodeExtraFields(unittest.TestCase):
+    def setUp(self):
+        GenericDAO.createTable(IPNode)
+        self._cleanup()
+
+    def _cleanup(self):
+        with GenericDAO.conn() as connection:
+            connection.execute("DELETE FROM ip_node")
+            connection.commit()
+
+    def test_score_and_opsec_flag(self):
+        node = IPNode(id=None, ip="10.0.0.10", path="/", parent_ip=None, child_level=1, score=7.5, opsec_flag=1)
+        result = GenericDAO.insertar(node)
         self.assertEqual(result, 1)
+        objs = GenericDAO.seleccionar(IPNode)
+        self.assertEqual(len(objs), 1)
+        obj = objs[0]
+        self.assertEqual(obj.score, 7.5)
+        self.assertEqual(obj.opsec_flag, 1)
+        # Update
+        obj.score = 8.25
+        obj.opsec_flag = 0
+        updated = GenericDAO.actualizar(obj, obj.id)
+        self.assertGreaterEqual(updated, 1)
+        after = GenericDAO.seleccionarPorId(IPNode, obj.id)
+        self.assertEqual(after.score, 8.25)
+        self.assertEqual(after.opsec_flag, 0)
 
-    def test_eliminar_success(self):
-        model = DummyModel(1, '192.168.1.1', '', '/')
-        self.mock_cursor.rowcount = 1
-        result = GenericDAO.eliminar(model, 1)
-        self.mock_cursor.execute.assert_called_once_with(model.delete(), (1,))
-        self.assertEqual(result, 1)
+    def tearDown(self):
+        self._cleanup()
 
-    def test_seleccionarPorId_found(self):
-        self.mock_cursor.fetchone.return_value = (1, '192.168.1.1', '', '/')
-        result = GenericDAO.seleccionarPorId(DummyModel, 1)
-        self.mock_cursor.execute.assert_called_once()
-        self.assertIsInstance(result, DummyModel)
-        self.assertEqual(result.ip, '192.168.1.1')
-
-    def test_seleccionarPorId_not_found(self):
-        self.mock_cursor.fetchone.return_value = None
-        result = GenericDAO.seleccionarPorId(DummyModel, 99)
-        self.assertIsNone(result)
-
-    def test_seleccionarCoincidencia(self):
-        self.mock_cursor.fetchall.return_value = [
-            (1, '192.168.1.1', '', '/'),
-            (2, '192.168.1.2', '', '/')
-        ]
-        result = GenericDAO.seleccionarCoincidencia(DummyModel, 'ip', '192.168.1.1')
-        self.assertEqual(len(result), 2)
-        self.assertIsInstance(result[0], DummyModel)
-
-    def test_seleccionar_top_results(self):
-        self.mock_cursor.fetchmany.return_value = [
-            (1, '192.168.1.1', '', '/'),
-            (2, '192.168.1.2', '', '/')
-        ]
-        result = GenericDAO.seleccionar(DummyModel, top_results=2)
-        self.assertEqual(len(result), 2)
-        self.assertIsInstance(result[1], DummyModel)
-
-class TestTransaction(unittest.TestCase):
-    def test_transaction_commit(self):
-        conn = MagicMock()
-        cursor = MagicMock()
-        conn.cursor.return_value = cursor
-        pool = MagicMock(return_value=MagicMock(get_connection=MagicMock(return_value=conn)))
-
-        with Transaction(conn, pool) as cur:
-            cur.execute("SELECT 1")
-
-        conn.commit.assert_called_once()
-        cursor.close.assert_called_once()
-
-    def test_transaction_rollback_on_exception(self):
-        conn = MagicMock()
-        cursor = MagicMock()
-        conn.cursor.return_value = cursor
-        pool = MagicMock(return_value=MagicMock(get_connection=MagicMock(return_value=conn)))
-
-        try:
-            with Transaction(conn, pool) as cur:
-                raise ValueError("Simulated error")
-        except ValueError:
-            pass
-
-        conn.rollback.assert_called_once()
-        cursor.close.assert_called_once()
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

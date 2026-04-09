@@ -1,16 +1,16 @@
 from dataclasses import dataclass
 import sqlite3
+
 class IntegrityError(Exception):
     def __init__(self, datatype: str, *args):
         super().__init__("Integrity error on table {datatype}".format(datatype=datatype), *args)
-        
+
 class TransitiveTable:
     @classmethod
     def create_table(cls) -> str:
         ...
 
 class BaseEntity:
-
     @classmethod
     def select_map(cls):
         return {}
@@ -25,75 +25,68 @@ class BaseEntity:
         ...
     @classmethod
     def get_guid() -> str:
-        # returns an attribute that is the unique identifier of the class
         raise NotImplementedError("Subclasses must implement get_guid method")
     def exportAsTupple(self) -> tuple:
-        # returns the attributes of the class as a tupple
         raise NotImplementedError("Subclasses must implement exportAsTupple method")
     @classmethod
     def create_table() -> str:
-        # returns the SQL statement to create the table
         raise NotImplementedError("Subclasses must implement create_table method")
     @classmethod
     def select(cls) -> str:
-        # returns the SQL statement to select all records from the table
         raise NotImplementedError("Subclasses must implement select method")
     @classmethod
     def selectById(cls) -> str:
-        # returns the SQL statement to select a record by its unique identifier
         raise NotImplementedError("Subclasses must implement selectById method")
     @classmethod
     def selectCoincidence(cls) -> str:
-        # returns the SQL statement to select records by a field and value
         raise NotImplementedError("Subclasses must implement selectCoincidence method")
+
 @dataclass
 class IPNode(BaseEntity):
     id: int
     ip: str
-    path:str
+    path: str
     parent_ip: str = None
-    child_level:int = 0
+    child_level: int = 0
+    score: float = 0.0  # Score for noise/visibility
+    opsec_flag: int = 0  # 0/1 for False/True (OPSEC concern)
+
     @classmethod
-    def get_guid():
+    def get_guid(cls):
         return 'ip'
     @classmethod
     def insert(cls):
-        return f"INSERT INTO ip_node(ip,path,parent_ip,child_level) VALUES (?,?,?,?)"
+        return f"INSERT INTO ip_node(ip,path,parent_ip,child_level,score,opsec_flag) VALUES (?,?,?,?,?,?)"
     @classmethod
     def update(cls):
-        return f"UPDATE ip_node SET ip=?, path=?, parent_ip=? WHERE ip=?"
+        return f"UPDATE ip_node SET ip=?, path=?, parent_ip=?, child_level=?, score=?, opsec_flag=? WHERE id=?"
     @classmethod
     def delete(cls):
         return f"DELETE FROM ip_node WHERE id=?"
     def exportAsTupple(self):
-        return (self.ip,self.path,self.parent_ip,self.child_level)
+        return (self.ip, self.path, self.parent_ip, self.child_level, self.score, self.opsec_flag)
     @classmethod
     def select(cls):
-        
-        return "SELECT id, ip, path, parent_ip,child_level FROM ip_node"
+        return "SELECT id, ip, path, parent_ip, child_level, score, opsec_flag FROM ip_node"
     @classmethod
     def selectById(cls):
-        return "SELECT id, ip, path, parent_ip FROM ip_node WHERE id=?"
+        return "SELECT id, ip, path, parent_ip, child_level, score, opsec_flag FROM ip_node WHERE id=?"
     @classmethod
     def select_map(cls):
         sm = {
-            "ip":"SELECT id, ip, path, parent_ip FROM ip_node WHERE  ip = ?",
-            "id":"SELECT id, ip, path, parent_ip FROM ip_node WHERE  id = ?",
-            "parent_ip":"SELECT id, ip, path, parent_ip FROM ip_node WHERE  parent_ip = ?",
-            "child_level":"SELECT id, ip, path, parent_ip FROM ip_node WHERE  child_level = ?",
-            "max_child_level_by_parent":"SELECT MAX(child_level) as max_level FROM ip_node where parent_ip = ?"
+            "ip": "SELECT id, ip, path, parent_ip, child_level, score, opsec_flag FROM ip_node WHERE ip = ?",
+            "id": "SELECT id, ip, path, parent_ip, child_level, score, opsec_flag FROM ip_node WHERE id = ?",
+            "parent_ip": "SELECT id, ip, path, parent_ip, child_level, score, opsec_flag FROM ip_node WHERE parent_ip = ?",
+            "child_level": "SELECT id, ip, path, parent_ip, child_level, score, opsec_flag FROM ip_node WHERE child_level = ?",
+            "max_child_level_by_parent": "SELECT MAX(child_level) as max_level FROM ip_node where parent_ip = ?"
         }
         return sm
     @classmethod
-    def selectCoincidence(cls,field):
-        # select map realmente solo son consultas especificas por campo para evitar tener que 
-        # crear una consulta que se altere en tiempo de ejecucion que es riesgoso
-        sm = cls.select_map().get(field,None)
+    def selectCoincidence(cls, field):
+        sm = cls.select_map().get(field, None)
         if not sm:
             raise ValueError(f"No se definio una consulta de tipo {field} en {cls.__name__} ")
         return sm
-
-    
     @classmethod
     def create_table(cls):
         return '''
@@ -102,19 +95,20 @@ class IPNode(BaseEntity):
                 ip TEXT NOT NULL,
                 path TEXT NOT NULL,
                 parent_ip TEXT,
-                child_level INTEGER DEFAULT 0
+                child_level INTEGER DEFAULT 0,
+                score REAL DEFAULT 0.0,
+                opsec_flag INTEGER DEFAULT 0
             )
         '''
-    
-        
+
 @dataclass
 class Ports(BaseEntity):
     id: int
-    port:int
-    service_name:str
-    ip:str
+    port: int
+    service_name: str
+    ip: str
     @classmethod
-    def get_guid():
+    def get_guid(cls):
         return 'port'
     @classmethod
     def insert(cls):
@@ -134,21 +128,20 @@ class Ports(BaseEntity):
     @classmethod
     def select_map(cls):
         sm = {
-            "ip":"SELECT id, port, service_name,ip parent_ip FROM ports WHERE  ip = ?",
-            "id":"SELECT id, port, service_name,ip FROM ports WHERE  id = ?"
+            "ip": "SELECT id, port, service_name,ip FROM ports WHERE  ip = ?",
+            "id": "SELECT id, port, service_name,ip FROM ports WHERE  id = ?"
         }
         return sm
     @classmethod
-    def selectCoincidence(cls,field):
-        # select map realmente solo son consultas especificas por campo para evitar tener que 
-        # crear una consulta que se altere en tiempo de ejecucion que es riesgoso
-        sm = cls.select_map().get(field,None)
+    def selectCoincidence(cls, field):
+        sm = cls.select_map().get(field, None)
         if not sm:
             raise ValueError(f"No se definio una consulta de tipo {field} en {cls.__name__} ")
         return sm
     def exportAsTupple(self):
-        return (self.port,self.service_name,self.ip)    
-    def create_table():
+        return (self.port, self.service_name, self.ip)
+    @classmethod
+    def create_table(cls):
         return '''
             CREATE TABLE IF NOT EXISTS ports (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -158,6 +151,101 @@ class Ports(BaseEntity):
                 FOREIGN KEY(ip) REFERENCES ip_node(ip)
             )
         '''
+
+# NUEVAS ENTIDADES BLOQUE 1
+@dataclass
+class WorkflowScoreConfig(BaseEntity):
+    """
+    Represents workflow scoring configuration parameters.
+    """
+    id: int
+    name: str
+    value: float
+    description: str = ""
+
+    @classmethod
+    def get_guid(cls):
+        return "id"
+    @classmethod
+    def insert(cls):
+        return "INSERT INTO workflow_score_config(name, value, description) VALUES (?, ?, ?)"
+    @classmethod
+    def update(cls):
+        return "UPDATE workflow_score_config SET name=?, value=?, description=? WHERE id=?"
+    @classmethod
+    def delete(cls):
+        return "DELETE FROM workflow_score_config WHERE id=?"
+    def exportAsTupple(self):
+        return (self.name, self.value, self.description)
+    @classmethod
+    def select(cls):
+        return "SELECT id, name, value, description FROM workflow_score_config"
+    @classmethod
+    def selectById(cls):
+        return "SELECT id, name, value, description FROM workflow_score_config WHERE id=?"
+    @classmethod
+    def selectCoincidence(cls, field):
+        return f"SELECT id, name, value, description FROM workflow_score_config WHERE {field}=?"
+    @classmethod
+    def create_table(cls):
+        return """
+        CREATE TABLE IF NOT EXISTS workflow_score_config (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            value REAL NOT NULL,
+            description TEXT
+        )
+        """
+
+@dataclass
+class PivotHistory(BaseEntity):
+    """
+    Represents a history entry for a pivot operation between hosts.
+    """
+    id: int
+    source_ip: str
+    dest_ip: str
+    operator: str
+    timestamp: str
+    details: str = ""
+
+    @classmethod
+    def get_guid(cls):
+        return "id"
+    @classmethod
+    def insert(cls):
+        return "INSERT INTO pivot_history(source_ip, dest_ip, operator, timestamp, details) VALUES (?, ?, ?, ?, ?)"
+    @classmethod
+    def update(cls):
+        return "UPDATE pivot_history SET source_ip=?, dest_ip=?, operator=?, timestamp=?, details=? WHERE id=?"
+    @classmethod
+    def delete(cls):
+        return "DELETE FROM pivot_history WHERE id=?"
+    def exportAsTupple(self):
+        return (self.source_ip, self.dest_ip, self.operator, self.timestamp, self.details)
+    @classmethod
+    def select(cls):
+        return "SELECT id, source_ip, dest_ip, operator, timestamp, details FROM pivot_history"
+    @classmethod
+    def selectById(cls):
+        return "SELECT id, source_ip, dest_ip, operator, timestamp, details FROM pivot_history WHERE id=?"
+    @classmethod
+    def selectCoincidence(cls, field):
+        return f"SELECT id, source_ip, dest_ip, operator, timestamp, details FROM pivot_history WHERE {field}=?"
+    @classmethod
+    def create_table(cls):
+        return """
+        CREATE TABLE IF NOT EXISTS pivot_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_ip TEXT NOT NULL,
+            dest_ip TEXT NOT NULL,
+            operator TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            details TEXT
+        )
+        """
+
+# ... el resto del modelo y entidades no cambia del archivo original ...
 
 
 
@@ -356,7 +444,7 @@ class Templates(BaseEntity):
             desc,
             linux,
             windows,
-            noise_estimate UNINDEXED
+            noise_estimate UFNINDEXED
         );"""
 
     @classmethod
@@ -402,3 +490,4 @@ class Templates(BaseEntity):
             "windows": 4,
             "noise_estimate": 5
         }
+    

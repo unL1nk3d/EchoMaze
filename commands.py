@@ -1,5 +1,5 @@
 import os
-from core import Core
+from core.core import Core
 from GATHERINGDB.init_db import DatabaseInitializer
 
 class Commands:

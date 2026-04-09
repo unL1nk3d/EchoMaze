@@ -15,5 +15,5 @@ class DocumentIngestorImp(ForDocumentIngestion):
         except json.JSONDecodeError:
             raise ValueError('File Error JSON cant parse the data!')
         except Exception as e :
-            raise ValueError(f'The file cant be loaded! {e}')
+            raise ValueError(f'The file cant be loaded! {document} {e}')
         return self.repository.save_document(document)
