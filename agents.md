@@ -31,3 +31,10 @@ Before creating a new feature, develop a test case (TDD) in the `UI/tests` direc
 
 ## Development Environment Tips
 - Activate the virtual environment: `& C:\Users\ispi2\.virtualenvs\BLWSL-l5dQw78k\Scripts\Activate.ps1`
+
+## pip requirements:
+inorder to create a new enviroment you need to download the follow dependences:
+pyperclip
+asciimatics
+
+
