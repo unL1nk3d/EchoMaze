@@ -2,6 +2,7 @@ from GATHERINGDB.main import CRUD_GATHERINGDB,GenericDAO,log
 from GATHERINGDB.model import IntegrityError
 from GATHERINGDB.init_db import DatabaseInitializer
 from collections import defaultdict
+from core.tactical_suggestions import TacticalSuggestions
 
 import re
 import os
@@ -54,9 +55,11 @@ PORT_SERVICE_MAP = {
 
 
 class Core:
-    def __init__(self,crud:CRUD_GATHERINGDB=None,PORT_SERVICE_MAP:dict[int,str]=None):
+    def __init__(self,crud:CRUD_GATHERINGDB=None,PORT_SERVICE_MAP:dict[int,str]=None, tactical_suggestions=None):
         self.crud = crud
         self.port_service_map = PORT_SERVICE_MAP
+        self.tactical_suggestions = tactical_suggestions or TacticalSuggestions()
+
     def select_all_ips(self):
         return self.crud.select_all_ips(dao=self.crud.dao)
     def select_all_ports(self):

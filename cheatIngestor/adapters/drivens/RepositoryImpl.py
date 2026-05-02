@@ -2,7 +2,7 @@ from cheatIngestor.ports.drivens.forRepository import ForRepository
 from cheatIngestor.models.repository import Configurator
 from cheatIngestor.models.template import Technique,Template
 from json import loads
-#from GATHERINGDB.model import Templates
+from GATHERINGDB.model import Templates
 import sqlite3
 class Repository(ForRepository):
     _configurator:Configurator = None

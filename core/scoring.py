@@ -1,6 +1,7 @@
 from GATHERINGDB.model import IPNode, WorkflowScoreConfig
+from UI.models import Observable
 
-class ScoringEngine:
+class ScoringEngine(Observable):
     def __init__(
         self,
         crud,  # CRUD_GATHERINGDB instance
@@ -11,7 +12,9 @@ class ScoringEngine:
     ):
         """
         Recibe CRUD_GATHERINGDB, usa sus métodos para todas las operaciones persistentes.
+        Extends Observable to emit score_changed and profile_changed events.
         """
+        super().__init__()
         self.crud = crud
         self.config_model_cls = config_model_cls
 
@@ -64,8 +67,7 @@ class ScoringEngine:
             node = self._find_ipnode(ip)
         node.opsec_flag = profile
         self.crud.update_ip(node.id, node, dao=self.crud.dao)
-        # Optional: alert on profile update
-        # self.on_profile_changed(ip, profile)
+        self.notify("profile_changed", {"ip": ip, "profile": profile})
 
     def reset_score(self, ip):
         node = self._find_ipnode(ip)
@@ -92,8 +94,31 @@ class ScoringEngine:
 
     def on_score_changed(self, ip: str, new_score: float):
         """
-        Hook opcional: se llama cada vez que un score es actualizado.
-        Aquí podés conectar telemetría, alertas, sugerencias, etc.
-        (Por defecto no hace nada.)
+        Hook: se llama cada vez que un score es actualizado.
+        Emits score_changed event to all observers.
         """
-        pass
+        self.notify("score_changed", {"ip": ip, "score": new_score})
+
+    def aggregate_pivot_noise(self, path: list) -> dict:
+        """
+        Calculate aggregate noise across a pivot path.
+        
+        Args:
+            path: list of IP strings representing the pivot chain (root → leaf)
+        
+        Returns:
+            dict with:
+                - total_noise: float, sum of all scores in the path
+                - per_ip: dict mapping each IP to its individual score
+        """
+        if not path:
+            return {'total_noise': 0.0, 'per_ip': {}}
+        
+        per_ip = {}
+        total = 0.0
+        for ip in path:
+            score = self.get_score(ip)
+            per_ip[ip] = score
+            total += score
+        
+        return {'total_noise': total, 'per_ip': per_ip}

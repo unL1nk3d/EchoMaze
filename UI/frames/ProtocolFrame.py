@@ -4,7 +4,8 @@ from asciimatics.screen import Screen
 from asciimatics.event import KeyboardEvent
 from asciimatics.exceptions import StopApplication, NextScene
 from asciimatics.scene import Scene
-class ProtocolFrame(Frame):
+from UI.models import Observer
+class ProtocolFrame(Frame,Observer):
     def __init__(self, screen, model):
         # parents y protocols frame
         super(ProtocolFrame, self).__init__(screen, 20, screen.width, has_border=True, name="Protocol Submenu")
@@ -27,7 +28,8 @@ class ProtocolFrame(Frame):
         layout.add_widget(self.items)
         layout.add_widget(Divider())
         layout.add_widget(Label("Presiona Q para regresar"))
-        self.model.attach(self)
+        self.model.attach(self) # XXX
+
         self._update_protocols()
         
         #self.fix()
@@ -35,6 +37,7 @@ class ProtocolFrame(Frame):
         """Método llamado automáticamente cuando el modelo cambia"""
         if 'selected_ip' in kwargs:
             self._update_protocols()
+
     def _update_protocols(self):
         """Actualizar la lista de protocolos basado en self.model.selected_ip"""
         selected_data = None

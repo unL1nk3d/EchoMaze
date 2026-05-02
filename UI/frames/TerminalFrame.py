@@ -350,8 +350,9 @@ class TerminalFrame(Frame):
         self.fix()
         self._load_suggestions()
 
-    def observerUpdate(self, **kwargs):
-        if 'selected_ip' in kwargs:
+    def observer_update(self, event_type: str, payload: dict):
+        """Observer pattern: called by Observable.notify(event_type, payload)."""
+        if event_type == "selected_ip_changed":
             self._load_suggestions()
             self.terminal.suggestions = self.suggestions
 

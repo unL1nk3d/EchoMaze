@@ -1,5 +1,8 @@
 *.db
 *.gnmap
 *.pyc
+*.txt
+*.log
+*.sql
 __pycache__
 wscripts

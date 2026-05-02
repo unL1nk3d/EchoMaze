@@ -5,10 +5,11 @@ from asciimatics.widgets import Frame, Layout, Widget, Label, PopUpDialog, Text,
 from asciimatics.screen import Screen
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 from asciimatics.scene import Scene
+from UI.models import Observer, inject_risk_palette, risk_colour_key_for_score
 import sys
 
 
-class TreeIPFrame(Frame):
+class TreeIPFrame(Frame, Observer):
     """
     Frame que muestra una estructura de árbol jerárquica de IPs:
     - Raíz: IPs principales (child_level == 0)
@@ -19,6 +20,8 @@ class TreeIPFrame(Frame):
     - Core: para parsear y recargar desde directorios
     - Main (CRUD): para acceder a la BD
     - Models: GenericModel con mapper y temas
+    
+    Implements Observer to receive model updates for inline suggestions and risk colors.
     """
 
     PALETTES = {
@@ -64,6 +67,7 @@ class TreeIPFrame(Frame):
             name="IP Tree Manager",
             #palette=self.PALETTES.get(theme, self.PALETTES["hacker"])
         )
+        Observer.__init__(self)
         self.model = model
         self.core = core
         self.current_theme = theme
@@ -73,6 +77,7 @@ class TreeIPFrame(Frame):
         self._expand_depths = {}  # mapa parent_ip -> depth de expansión (0 = colapsado)
         self._visible_nodes = []  # lista paralela a tree_list.options con nodos visibles
         self.set_theme('bright')
+        inject_risk_palette(self.palette)
 
         # ========== LAYOUT HEADER ==========
         layout_header = Layout([1], fill_frame=False)
@@ -143,8 +148,18 @@ class TreeIPFrame(Frame):
         layout_footer = Layout([1], fill_frame=False)
         self.add_layout(layout_footer)
         layout_footer.add_widget(Divider())
+        
+        # ========== INLINE SUGGESTIONS ==========
+        layout_suggestions = Layout([1], fill_frame=False)
+        self.add_layout(layout_suggestions)
+        self.inline_suggestions_label = Label("[OpSec: Select an IP to see suggestions]")
+        layout_suggestions.add_widget(self.inline_suggestions_label)
+        layout_suggestions.add_widget(Divider())
+        
         self.status_label = Label("")
-        layout_footer.add_widget(self.status_label,column=0)
+        layout_footer_status = Layout([1], fill_frame=False)
+        self.add_layout(layout_footer_status)
+        layout_footer_status.add_widget(self.status_label, column=0)
 
         self.fix()
         self._build_tree()
@@ -200,6 +215,18 @@ class TreeIPFrame(Frame):
             nodes.extend(self._gather_children(ip, max_depth - 1, current_depth + 1))
         return nodes
 
+    def _get_risk_indicator(self, ip):
+        """Get a risk level indicator for an IP from the scoring engine."""
+        if hasattr(self.model, 'scoring_engine') and self.model.scoring_engine:
+            try:
+                from UI.models import risk_color_for_score
+                score = self.model.scoring_engine.get_score(ip)
+                color = risk_color_for_score(score)
+                return {'green': '', 'yellow': '!', 'red': '!!'}. get(color, '')
+            except Exception:
+                pass
+        return ''
+
     def _update_tree_display(self):
         """Actualizar visualización del árbol en la ListBox según self._expand_depths"""
         options = []
@@ -207,8 +234,10 @@ class TreeIPFrame(Frame):
         for principal_ip, protocols in self._principals:
             depth = self._expand_depths.get(principal_ip, 0)
             icon = "▼" if depth > 0 else "▶"
+            risk = self._get_risk_indicator(principal_ip)
+            risk_suffix = f" {risk}" if risk else ""
             # Mostrar icono de expandir/contraer. Si es la fila seleccionada, añadir marcador '→'
-            display = f"{icon} {principal_ip}"
+            display = f"{icon} {principal_ip}{risk_suffix}"
             options.append((display, len(visible_nodes)))
             visible_nodes.append({
                 'type': 'principal',
@@ -223,7 +252,9 @@ class TreeIPFrame(Frame):
                 child_nodes = self._gather_children(principal_ip, depth, current_depth=1)
                 for child in child_nodes:
                     indent_spaces = "  " * child['indent']
-                    display = f"{indent_spaces}└─ {child['ip']}"
+                    child_risk = self._get_risk_indicator(child['ip'])
+                    child_risk_suffix = f" {child_risk}" if child_risk else ""
+                    display = f"{indent_spaces}└─ {child['ip']}{child_risk_suffix}"
                     options.append((display, len(visible_nodes)))
                     visible_nodes.append(child)
 
@@ -323,14 +354,36 @@ class TreeIPFrame(Frame):
         self._update_status(f"[+] Depth for {parent_ip}: {self._expand_depths[parent_ip]}")
 
     def _show_node_details(self, node):
-        """Mostrar detalles del nodo seleccionado"""
-        details = f"IP: {node['ip']}\n"
-        # details += f"Type: {node['type'].upper()}\n"
+        """Mostrar detalles del nodo seleccionado, including risk color from scoring."""
+        ip = node['ip']
+        details = f"IP: {ip}\n"
+        
+        # Try to get risk color from model
+        risk_tag = ""
+        if hasattr(self.model, 'get_opsec_data'):
+            try:
+                data = self.model.get_opsec_data(ip)
+                risk = data.get('risk_color', 'green')
+                noise = data.get('noise_score', 0)
+                risk_icon = {'green': '[LOW]', 'yellow': '[MED]', 'red': '[HIGH]'}.get(risk, '')
+                risk_tag = f" {risk_icon} Noise:{noise:.0f}"
+            except Exception:
+                pass
+        
+        details += risk_tag
+        
         if node['parent']:
             self.details_parent.value = f"Parent: {node['parent']}"
-            #details += f"Parent: {node['parent']}\n"
-        #details += f"Protocols: {len(node['protocols'])}\n"
         self.details_text.value = details
+        
+        # Set risk colour on details_text widget
+        if hasattr(self.model, 'get_opsec_data'):
+            try:
+                _opsec = self.model.get_opsec_data(ip)
+                _noise = _opsec.get('noise_score', 0)
+                self.details_text.custom_colour = risk_colour_key_for_score(_noise)
+            except Exception:
+                pass
         
         details = ""
         if node['protocols']:
@@ -339,6 +392,52 @@ class TreeIPFrame(Frame):
                 details += f"... +{len(node['protocols']) - 5} more"
 
         self.details_ports.value = details
+
+    # ===== Observer interface =====
+
+    def observer_update(self, event_type: str, payload: dict):
+        """Called by Observable subjects when the model state changes.
+        Updates inline suggestions and risk colors in the tree view."""
+        if event_type == "selected_ip_changed":
+            ip = payload.get("ip", "")
+            self._update_inline_suggestions(ip)
+
+    def _update_inline_suggestions(self, ip=None):
+        """Fetch OpSec data from model and update the inline suggestions label."""
+        if not ip:
+            ip = getattr(self.model, 'selected_ip', '')
+        if not ip:
+            if hasattr(self, 'inline_suggestions_label'):
+                self.inline_suggestions_label.text = "[OpSec: Select an IP to see suggestions]"
+            return
+
+        try:
+            if hasattr(self.model, 'get_opsec_data'):
+                data = self.model.get_opsec_data(ip)
+                noise = data.get('noise_score', 0)
+                risk = data.get('risk_color', 'green')
+                suggestions = data.get('suggestions', [])
+                pivot_path = data.get('pivot_path', [])
+                agg = data.get('aggregate_noise', {})
+
+                # Build display
+                risk_icon = {'green': '>.<', 'yellow': ':|', 'red': 'D:'}.get(risk, '')
+                lines = [f"{risk_icon} [{risk.upper()}] IP: {ip} | Noise: {noise:.1f}"]
+                
+                if agg and agg.get('total_noise', 0) > 0 and len(pivot_path) > 1:
+                    lines.append(f"  Pivot path noise: {agg['total_noise']:.1f} ({' -> '.join(pivot_path)})")
+                
+                if suggestions:
+                    lines.append("  Suggestions:")
+                    for tip in suggestions[:3]:  # Limit to 3 in inline view
+                        lines.append(f"    - {tip}")
+
+                if hasattr(self, 'inline_suggestions_label'):
+                    self.inline_suggestions_label.text = "\n".join(lines)
+                    self.inline_suggestions_label.custom_colour = risk_colour_key_for_score(noise)
+        except Exception:
+            if hasattr(self, 'inline_suggestions_label'):
+                self.inline_suggestions_label.text = "[OpSec: Error loading suggestions]"
 
     def reload_from_directory(self):
         """Recargar datos desde directorios usando Core"""
@@ -402,6 +501,8 @@ class TreeIPFrame(Frame):
             elif event.key_code == ord('m'):
                 self._show_terminal()
                 return None
+            elif event.key_code == ord('o'):
+                raise NextScene('opsec')
 
         return super(TreeIPFrame, self).process_event(event)
     def _update_status(self, message):
