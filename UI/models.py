@@ -127,8 +127,63 @@ class UIMapper:
             # si se recibe una lista ya transformada
             self._value = data
 
+def risk_color_for_score(score: float, low: float = 20.0, high: float = 65.0) -> str:
+    """Map a noise score to a risk color: green (low), yellow (medium), red (high).
+    
+    Thresholds:
+        score < low  → 'green'
+        low <= score < high → 'yellow'
+        score >= high → 'red'
+    """
+    if score >= high:
+        return 'red'
+    elif score >= low:
+        return 'yellow'
+    return 'green'
+
+
+# --- Risk palette entries for asciimatics terminal colors ---
+
+RISK_PALETTE_ENTRIES = {
+    'risk_green': (Screen.COLOUR_GREEN, Screen.A_NORMAL, Screen.COLOUR_BLACK),
+    'risk_yellow': (Screen.COLOUR_YELLOW, Screen.A_NORMAL, Screen.COLOUR_BLACK),
+    'risk_red': (Screen.COLOUR_RED, Screen.A_NORMAL, Screen.COLOUR_BLACK),
+}
+
+
+def inject_risk_palette(palette: dict) -> None:
+    """Add risk_green, risk_yellow, risk_red entries to a Frame palette dict."""
+    palette.update(RISK_PALETTE_ENTRIES)
+
+
+def risk_colour_key_for_score(score: float, low: float = 20.0, high: float = 65.0) -> str:
+    """Map a noise score to a risk palette key name for asciimatics custom_colour.
+    
+    Returns:
+        'risk_green'  if score < low
+        'risk_yellow' if low <= score < high
+        'risk_red'    if score >= high
+    """
+    if score >= high:
+        return 'risk_red'
+    elif score >= low:
+        return 'risk_yellow'
+    return 'risk_green'
+
+
+class Observer:
+    """Base class for observers. Subclasses override observer_update(event_type, payload).
+    
+    Uses observer_update (not update) to avoid collision with
+    asciimatics Effect.update(frame_no) in Frame subclasses.
+    """
+    def observer_update(self, event_type: str, payload: dict):
+        """Called by Observable when an event occurs. Override in subclasses."""
+        pass
+
+
 class Observable:
-    """Clase base para observables"""
+    """Base class for observables with event_type + payload notification."""
     def __init__(self):
         self._observers = []
     
@@ -140,17 +195,25 @@ class Observable:
         if observer in self._observers:
             self._observers.remove(observer)
     
-    def notify(self, **kwargs):
+    def notify(self, event_type: str, payload: dict):
         for observer in self._observers:
-            observer.observerUpdate(**kwargs)
-            
+            observer.observer_update(event_type, payload)
+
+
 class GenericModel(Observable):
-    def __init__(self, repository, commands=None, port_service_map=None, ingestor=None):
+    def __init__(self, repository, commands=None, port_service_map=None, ingestor=None, opsec_hooks=None, scoring_engine=None):
         super().__init__()
         self.repo = RepositoryModel(repository)
         self.cmd = CommandModel(commands)
         self.ingestor = ingestor
         self.mapper = UIMapper(port_service_map=port_service_map)
+        self.scoring_engine = scoring_engine
+        # Lazy import to avoid circular dependency
+        if opsec_hooks is not None:
+            self.opsec_hooks = opsec_hooks
+        else:
+            from hooks.opsec_hooks import OpSecHooks
+            self.opsec_hooks = OpSecHooks()
         self._cachered = []
         self._just_parents = []
         self.protocols = ["SMB", "FTP", "SSH", "HTTP", "DNS", "RDP", "Telnet", "SMTP", "POP3", "IMAP", "LDAP", "SNMP"]
@@ -166,7 +229,7 @@ class GenericModel(Observable):
     def selected_ip(self, value):
         if self._selected_ip != value:
             self._selected_ip = value
-            self.notify(selected_ip=value)
+            self.notify("selected_ip_changed", {"ip": value})
     @property
     def cachered_ips(self):
         if not self._cachered:
@@ -186,6 +249,23 @@ class GenericModel(Observable):
             self.mapper.load(ips or [], ports or [])
             self._cachered = self.mapper.value
         return self._cachered
+    
+    def reload_cache(self):
+        """Fuerza la recarga del cache de IPs (util despues de importar logs)."""
+        self._cachered = []
+        return self.cachered_ips
+    
+    def get_all_actions(self):
+        """
+        Obtener todos los eventos/acciones registrados.
+        
+        Returns:
+            Lista de entidades Actions si el repo lo soporta, None en otro caso
+        """
+        repo = self.repo.repository
+        if hasattr(repo, 'select_all_actions'):
+            return repo.select_all_actions()
+        return None
     @staticmethod
     def Quickshort(req:list[int]):
         fin = []
@@ -255,6 +335,102 @@ class GenericModel(Observable):
                 pyperclip.copy(text)
             except ImportError:
                 pass  # No hacer nada si no se puede
+
+    def _build_pivot_path(self, ip):
+        """Build the pivot path (root → ... → leaf) from cachered_ips hierarchy."""
+        # Build parent lookup: ip_str -> parent_ip_str
+        parent_map = {}
+        known_ips = set()
+        for item in self.cachered_ips:
+            ip_str = item[0]
+            parent_ip = item[1]
+            known_ips.add(ip_str)
+            if parent_ip:
+                parent_map[ip_str] = parent_ip
+
+        if ip not in known_ips:
+            return []
+
+        # Walk up from ip to root
+        path = [ip]
+        current = ip
+        visited = set()
+        while current in parent_map and current not in visited:
+            visited.add(current)
+            parent = parent_map[current]
+            if parent and parent in known_ips:
+                path.append(parent)
+                current = parent
+            else:
+                break
+
+        path.reverse()  # root → ... → leaf
+        return path
+
+    def get_opsec_data(self, ip):
+        """Return current OpSec data for an IP: noise_score, service, pivot_path, 
+        risk_color, aggregate_noise, suggestions, status."""
+        noise_score = 0
+        service = None
+        pivot_path = []
+        status = "ok"
+        aggregate_noise = {'total_noise': 0.0, 'per_ip': {}}
+        suggestions = []
+        try:
+            # Get noise score from ScoringEngine if available
+            if self.scoring_engine is not None:
+                noise_score = self.scoring_engine.get_score(ip)
+
+            # Get service from cachered_ips
+            for item in self.cachered_ips:
+                if item[0] == ip:
+                    services = item[2]
+                    if services:
+                        service = services[0]
+                    break
+
+            # Build pivot path from hierarchy
+            pivot_path = self._build_pivot_path(ip)
+
+            # Get aggregate noise from ScoringEngine if available
+            if self.scoring_engine is not None and pivot_path:
+                aggregate_noise = self.scoring_engine.aggregate_pivot_noise(pivot_path)
+
+            # Build suggestions from opsec_hooks
+            if hasattr(self, 'opsec_hooks') and self.opsec_hooks:
+                try:
+                    noise_advice = self.opsec_hooks.on_noise_score_update(noise_score)
+                    if noise_advice:
+                        suggestions.append(noise_advice)
+                except Exception:
+                    pass
+                try:
+                    if service:
+                        service_tips = self.opsec_hooks.on_service_selected(service)
+                        if service_tips:
+                            suggestions.extend(service_tips)
+                except Exception:
+                    pass
+                try:
+                    if pivot_path:
+                        path_tips = self.opsec_hooks.on_pivot_path_change(pivot_path)
+                        if path_tips:
+                            suggestions.extend(path_tips)
+                except Exception:
+                    pass
+
+        except Exception:
+            status = "error"
+
+        return {
+            "noise_score": noise_score,
+            "service": service,
+            "pivot_path": pivot_path,
+            "risk_color": risk_color_for_score(noise_score),
+            "aggregate_noise": aggregate_noise,
+            "suggestions": suggestions,
+            "status": status,
+        }
     
 
 from collections import defaultdict

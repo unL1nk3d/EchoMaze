@@ -1,7 +1,7 @@
 import os
 from typing import Generator
 from GATHERINGDB.dao import GenericDAO,Transaction
-from GATHERINGDB.model import IPNode,Ports
+from GATHERINGDB.model import IPNode,Ports,Actions
 from GATHERINGDB.init_db import DatabaseInitializer
 from GATHERINGDB.log import log
 
@@ -62,6 +62,77 @@ class CRUD_GATHERINGDB:
 
     def select_all_ports(self,dao:GenericDAO=None) -> list[Ports]:
         return dao.seleccionar(Ports)
+    
+    def insert_action(self, action: Actions, dao: GenericDAO = None) -> bool:
+        """
+        Insertar una acción/comando en la tabla actions.
+        
+        Args:
+            action: Entidad Actions a insertar
+            dao: Instancia de GenericDAO (usa self.dao si no se especifica)
+            
+        Returns:
+            True si la inserción fue exitosa, False si falló
+        """
+        try:
+            if dao is None:
+                dao = self.dao
+            dao.insertar(action)
+            return True
+        except Exception as e:
+            log.error(f"[-] error inserting action: {str(e)}")
+            return False
+    
+    def select_all_actions(self, dao: GenericDAO = None) -> list[Actions]:
+        """
+        Seleccionar todas las acciones/comandos.
+        
+        Args:
+            dao: Instancia de GenericDAO
+            
+        Returns:
+            Lista de entidades Actions
+        """
+        try:
+            if dao is None:
+                dao = self.dao
+            return dao.seleccionar(Actions)
+        except Exception as e:
+            log.error(f"[-] error selecting actions: {str(e)}")
+            return []
+    
+    def select_actions_by_field(self, field: str, value: str, dao: GenericDAO = None) -> list[Actions]:
+        """
+        Seleccionar acciones por un campo específico.
+        
+        Args:
+            field: Campo a buscar
+            value: Valor del campo
+            dao: Instancia de GenericDAO
+            
+        Returns:
+            Lista de entidades Actions que coinciden
+        """
+        try:
+            if dao is None:
+                dao = self.dao
+            return dao.seleccionarCoincidencia(Actions, field, value)
+        except Exception as e:
+            log.error(f"[-] error selecting actions by {field}: {str(e)}")
+            return []
+    
+    def select_actions_by_node_id(self, node_id: int, dao: GenericDAO = None) -> list[Actions]:
+        """
+        Seleccionar todas las acciones de un nodo IP.
+        
+        Args:
+            node_id: ID del nodo IP
+            dao: Instancia de GenericDAO
+            
+        Returns:
+            Lista de acciones del nodo
+        """
+        return self.select_actions_by_field('node_id', str(node_id), dao)
     def select(self,data,dao:GenericDAO=None):
         nodes = dao.seleccionar(data)
         return nodes
