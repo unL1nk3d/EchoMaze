@@ -175,9 +175,9 @@ class OpSecPanel(Frame, Observer):
         # Compose label
         label = "\n- ".join([str(t) for t in tips if t])
         if not label:
-            label = "[No current OpSec suggestions]"
+            label = f"[No current OpSec suggestions] (Noise Score: {self.noise_score:.2f})" if self.noise_score is not None else "[No current OpSec suggestions]"
         else:
-            label = "[OpSec Guidance]\n- " + label
+            label = f"[OpSec Guidance (Noise Score: {self.noise_score:.2f})]\n- " + label if self.noise_score is not None else "[OpSec Guidance]\n- " + label
 
         # Add state indicator
         if self._state == "error":
