@@ -8,12 +8,12 @@ class IngestorUseCase:
     def __init__(self, documents:ForDocumentIngestion,auto:ForAutoComplete):
         self.documents = documents
         self.auto = auto#repository: ForRepository):
-        
+
     def ingest_document(self, document: str):
         # Lógica de negocio para ingestión
         self.documents.save_document(document)
 
     def search_techniques(self, keyword: str) -> Technique:
-        return self.auto.search_coincidence(keyword)
+        return self.auto.searchCoincidence(keyword)
         # return technique
         

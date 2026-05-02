@@ -91,7 +91,33 @@ class CRUD_ACTIONS:
             node = dao.seleccionarPorId(IPNode, node_id)
             if not node:
                 raise ValueError(f"No IPNode found with id {node_id}")
-            
+
+            # Calcular noise_score si es 0.0 usando entropia
+            if noise_score == 0.0:
+                try:
+                    from cheatIngestor.api import get_noise_estimate_for_command
+                    from core.entropy import get_event_probability, calculate_noise_score
+
+                    # Intentar obtener noise_estimate desde cheatIngestor
+                    estimate = get_noise_estimate_for_command(command_template, dao=dao)
+
+                    # Crear dummy event para pasarlo a la funcion
+                    class _DummyEvent:
+                        pass
+                    dummy_event = _DummyEvent()
+                    dummy_event.command_template = command_template
+                    dummy_event.noise_estimate = estimate
+
+                    # Obtener historial
+                    historial = self.select_all_actions(dao=dao)
+
+                    # Obtener probabilidad y luego calcular noise_score
+                    prob = get_event_probability(dummy_event, historial)
+                    noise_score = calculate_noise_score(prob)
+                except Exception as ex:
+                    log.error(f"[-] Error calculating noise_score: {ex}")
+                    noise_score = 0.0
+
             action = Actions(
                 id=0,
                 node_id=node_id,
@@ -104,7 +130,7 @@ class CRUD_ACTIONS:
                 noise_score=noise_score
             )
             dao.insertar(action)
-            log.info(f"[+] Action inserted: {action_type} for node {node_id}")
+            log.info(f"[+] Action inserted: {action_type} for node {node_id} with noise_score: {noise_score}")
             return action
         except Exception as e:
             log.error(f"[-] Error inserting action: {e}")
@@ -145,7 +171,7 @@ class CRUD_ACTIONS:
             action = next((a for a in actions if a.id == action_id), None)
             if not action:
                 raise ValueError(f"No Action found with id {action_id}")
-            
+
             # Actualizar solo los campos proporcionados
             if action_type:
                 action.action_type = action_type
@@ -155,7 +181,7 @@ class CRUD_ACTIONS:
                 action.parameters = parameters
             if noise_score is not None:
                 action.noise_score = noise_score
-            
+
             dao.actualizar(action, action_id)
             log.info(f"[+] Action {action_id} updated")
         except Exception as e:
@@ -169,7 +195,7 @@ class CRUD_ACTIONS:
             action = next((a for a in actions if a.id == action_id), None)
             if not action:
                 raise ValueError(f"No Action found with id {action_id}")
-            
+
             dao.eliminar(action, action_id)
             log.info(f"[+] Action {action_id} deleted")
         except Exception as e:
@@ -185,7 +211,7 @@ class CRUD_OPSEC:
             action = next((a for a in actions if a.id == action_id), None)
             if not action:
                 raise ValueError(f"No Action found with id {action_id}")
-            
+
             log_entry = Opsec_logs(
                 id=0,
                 action_id=action_id,
@@ -235,14 +261,14 @@ class CRUD_OPSEC:
             log_entry = next((l for l in logs if l.id == log_id), None)
             if not log_entry:
                 raise ValueError(f"No OPSEC log found with id {log_id}")
-            
+
             if event:
                 log_entry.event = event
             if severity is not None:
                 log_entry.severity = severity
             if details:
                 log_entry.details = details
-            
+
             dao.actualizar(log_entry, log_id)
             log.info(f"[+] OPSEC log {log_id} updated")
         except Exception as e:
@@ -256,7 +282,7 @@ class CRUD_OPSEC:
             log_entry = next((l for l in logs if l.id == log_id), None)
             if not log_entry:
                 raise ValueError(f"No OPSEC log found with id {log_id}")
-            
+
             dao.eliminar(log_entry, log_id)
             log.info(f"[+] OPSEC log {log_id} deleted")
         except Exception as e:
@@ -272,7 +298,7 @@ class CRUD_ARTIFACTS:
             node = dao.seleccionarPorId(IPNode, node_id)
             if not node:
                 raise ValueError(f"No IPNode found with id {node_id}")
-            
+
             artifact = Artifacts(
                 id=0,
                 filename=filename,
@@ -326,7 +352,7 @@ class CRUD_ARTIFACTS:
             artifact = next((a for a in artifacts if a.id == artifact_id), None)
             if not artifact:
                 raise ValueError(f"No Artifact found with id {artifact_id}")
-            
+
             if filename:
                 artifact.filename = filename
             if sha1:
@@ -339,7 +365,7 @@ class CRUD_ARTIFACTS:
                 artifact.size = size
             if notes:
                 artifact.notes = notes
-            
+
             dao.actualizar(artifact, artifact_id)
             log.info(f"[+] Artifact {artifact_id} updated")
         except Exception as e:
@@ -353,7 +379,7 @@ class CRUD_ARTIFACTS:
             artifact = next((a for a in artifacts if a.id == artifact_id), None)
             if not artifact:
                 raise ValueError(f"No Artifact found with id {artifact_id}")
-            
+
             dao.eliminar(artifact, artifact_id)
             log.info(f"[+] Artifact {artifact_id} deleted")
         except Exception as e:
@@ -432,14 +458,14 @@ class CRUD_MITRE:
             mitre_entry = next((m for m in mitre_entries if m.mitre_id == mitre_id), None)
             if not mitre_entry:
                 raise ValueError(f"No MITRE TTP found with id {mitre_id}")
-            
+
             if tactic:
                 mitre_entry.tactic = tactic
             if technique:
                 mitre_entry.technique = technique
             if description:
                 mitre_entry.description = description
-            
+
             dao.actualizar(mitre_entry, mitre_id)
             log.info(f"[+] MITRE TTP {mitre_id} updated")
         except Exception as e:
@@ -453,7 +479,7 @@ class CRUD_MITRE:
             mitre_entry = next((m for m in mitre_entries if m.mitre_id == mitre_id), None)
             if not mitre_entry:
                 raise ValueError(f"No MITRE TTP found with id {mitre_id}")
-            
+
             dao.eliminar(mitre_entry, mitre_id)
             log.info(f"[+] MITRE TTP {mitre_id} deleted")
         except Exception as e:
@@ -475,10 +501,10 @@ class CRUD_MITRE:
 def main():
     """Ejemplo de uso del CRUD MITRE"""
     from GATHERINGDB.init_db import DatabaseInitializer
-    
+
     dao = GenericDAO()
     crud_mitre = CRUD_MITRE(dao)
-    
+
     # Insertar una técnica MITRE
     mitre_ttp = crud_mitre.insert_mitre_ttp(
         "T1046",
@@ -487,7 +513,7 @@ def main():
         "Adversaries may attempt to get a listing of services running on remote hosts.",
         dao=dao
     )
-    
+
     # Insertar una acción
     action = crud_mitre.insert_action(
         node_id=1,
@@ -499,7 +525,7 @@ def main():
         noise_score=0.3,
         dao=dao
     )
-    
+
     # Insertar un artefacto
     artifact = crud_mitre.insert_artifact(
         filename="scan_results.xml",
@@ -509,7 +535,7 @@ def main():
         notes="nmap scan results",
         dao=dao
     )
-    
+
     # Insertar un registro OPSEC
     opsec_log = crud_mitre.insert_opsec_log(
         action_id=action.id,
@@ -518,20 +544,20 @@ def main():
         details="Network scan completed successfully",
         dao=dao
     )
-    
+
     # Mostrar datos
     print("\n[+] All MITRE TTPs:")
     for ttp in crud_mitre.select_all_mitre_ttps(dao=dao):
         print(f"  {ttp.mitre_id}: {ttp.technique}")
-    
+
     print("\n[+] All Actions:")
     for act in crud_mitre.select_all_actions(dao=dao):
         print(f"  {act.action_type} for node {act.node_id}")
-    
+
     print("\n[+] All Artifacts:")
     for art in crud_mitre.select_all_artifacts(dao=dao):
         print(f"  {art.filename} (SHA256: {art.sha256[:10]}...)")
-    
+
     print("\n[+] All OPSEC Logs:")
     for log_entry in crud_mitre.select_all_opsec_logs(dao=dao):
         print(f"  [{log_entry.severity}] {log_entry.event}: {log_entry.details}")
