@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 @dataclass
-class UserReopsitory:
+class UserRepository:
     user_id: str
     username: str
     token:str

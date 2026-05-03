@@ -5,14 +5,7 @@ class ICredential(ABC):
     def validate(self) -> bool:
         ...
 
-class CredentialSerialized(ABC):
-    @abstractmethod
-    def get_credentials(self, credential: ICredential):
-        ...
-
 class IAuthenticatorProvider(ABC):
     @abstractmethod
     def login(self, credentials: ICredential) -> bool:
         ...
-
-

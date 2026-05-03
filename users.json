@@ -1,12 +1,16 @@
 {
     "admin": {
-        "user_id": "6d694f78-f91d-4fe5-84d5-0206eda6acb9",
+        "user_id": "2a33596c-2dae-45a0-bf93-be1ea660737a",
         "username": "admin",
         "roles": [
             "admin"
         ],
         "is_admin": true,
         "photo": null,
-        "password": "admin"
+        "password": {
+            "salt": "Uwm94mhVibaKy54oIjY/6w==",
+            "iterations": 100000,
+            "key": "8wAHc/5i8oqUGddThBKF1XQGmbM+4aKLTfPLlzSjgAo="
+        }
     }
 }
