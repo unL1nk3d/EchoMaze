@@ -21,6 +21,37 @@ class SimpleCommandModel:
         self.ERRORS = ""
     def run(self):
         if self.command:
+            # Comando personalizado para evaluación de exfiltración
+            if self.command.startswith("eval_exfil"):
+                parts = self.command.split()
+                if len(parts) >= 5:
+                    try:
+                        from core.entropy import evaluate_exfiltration
+                        info_type = " ".join(parts[1:parts.index("-s")]) if "-s" in parts else parts[1]
+
+                        # Manejo básico de argumentos para simplificar el uso
+                        # Ej: eval_exfil datos cifrados 1024 imagenes jpeg 2048
+                        # O forma posicional: eval_exfil "datos cifrados" 1024 "imagenes jpeg" 2048
+
+                        import shlex
+                        parsed_args = shlex.split(self.command)[1:]
+                        if len(parsed_args) == 4:
+                            i_type, i_size, p_type, p_size = parsed_args
+                            valid, msg = evaluate_exfiltration(i_type, float(i_size), p_type, float(p_size))
+                            output = f"Valid: {valid}\nMessage: {msg}\n"
+                        else:
+                            output = "Uso: eval_exfil '<info_type>' <info_size_bytes> '<portador_type>' <portador_size_bytes>\n"
+                    except Exception as e:
+                        output = f"Error en eval_exfil: {str(e)}\n"
+                else:
+                    output = "Uso: eval_exfil '<info_type>' <info_size_bytes> '<portador_type>' <portador_size_bytes>\n"
+
+                self.SUCCRESS = output
+                self.onChange = True
+                if self.stdout:
+                    self.stdout(output)
+                return
+
             try:
                 result = subprocess.run(self.command, shell=True, capture_output=True, text=True)
                 output = result.stdout + result.stderr
