@@ -42,3 +42,30 @@ password or auth0
 
   Default credentials: admin / admin.
 
+
+### proposes login 
+  1. Flujo de Inicialización Interactiva (Bootstrap)
+  Modificar el proceso de primera ejecución para que, en lugar de crear automáticamente la cuenta
+  admin:admin, el sistema detecte que no hay usuarios y solicite interactivamente al operador
+  configurar la contraseña del administrador principal. Esto se integraría en el comando --init-db.
+
+  2. Política de "Forced Password Reset"
+  Implementar un flag requires_password_change en el modelo de usuario.
+   * Lógica: Si el IAM detecta un inicio de sesión con una contraseña marcada como "temporal" o "por
+     defecto", el token devuelto incluirá un estado de "Restricción".
+   * Acción: El launch.py bloqueará el acceso a la TUI y a otros comandos hasta que se complete
+     exitosamente una función de cambio de contraseña.
+
+  3. Integración con el Motor de Scoring OPSEC
+  Dado que EchoMaze ya tiene un sistema de puntuación de ruido y sigilo (OPSEC), propongo:
+   * Penalización: Si la cuenta de administrador por defecto sigue activa con la configuración base,
+     el ScoringEngine aplicará una penalización severa al "Sigilo del Operador", ya que tener
+     credenciales débiles es una vulnerabilidad crítica en una operación de pentest.
+   * Advertencia en TUI: Mostrar un banner de alta visibilidad en la interfaz de asciimatics mientras
+     las credenciales no sean seguras.
+
+  4. Rotación Automática de Clave de Firma
+  Como el repositorio ahora usa el hash del admin para firmar tokens, forzar el cambio de contraseña
+  obligará al sistema a re-firmar la base de datos de usuarios con una nueva clave derivada de la
+  contraseña segura, asegurando que el "secreto" del sistema no sea conocido por defecto.
+  

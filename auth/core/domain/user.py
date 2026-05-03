@@ -9,6 +9,7 @@ class User:
     is_admin: bool = False
     photo: Optional[str] = None
     password: Optional[str] = None
+    requires_password_change: bool = False
 
     def validate_token(self, token: bytes):
         if not isinstance(token, bytes):

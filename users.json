@@ -1,16 +1,10 @@
 {
     "admin": {
-        "user_id": "2a33596c-2dae-45a0-bf93-be1ea660737a",
-        "username": "admin",
-        "roles": [
-            "admin"
-        ],
-        "is_admin": true,
-        "photo": null,
+        "token": "eyJ1c2VyX2lkIjogImQ1ZGNkNjBhLTE2Y2EtNDlmMy1iMzM4LTEwZmEyYTc0YTViZiIsICJyb2xlcyI6IFsiYWRtaW4iXSwgImlzX2FkbWluIjogdHJ1ZSwgInBob3RvIjogbnVsbH0=.a6574decdc12ae9181065e8a79a8f216d966147042fca50a7b4cc371561f72fc",
         "password": {
-            "salt": "Uwm94mhVibaKy54oIjY/6w==",
+            "salt": "+pRO4bwqu9pKsU0Uwg9V9g==",
             "iterations": 100000,
-            "key": "8wAHc/5i8oqUGddThBKF1XQGmbM+4aKLTfPLlzSjgAo="
+            "key": "hLbWG/k65JtV3waBGam6qGWUncVaaQA7Y4PMJe6Phys="
         }
     }
 }

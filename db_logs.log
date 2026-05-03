@@ -179217,3 +179217,644 @@ sqlite3.OperationalError: no such table: templates_fts
 2026-05-03 14:37:20,711 DEBUG:Layout event: <asciimatics.widgets.layout.Layout object at 0x0000025F92ACE8C0> MouseEvent (43, 4) 0
 2026-05-03 14:37:20,711 DEBUG:Layout event: <asciimatics.widgets.layout.Layout object at 0x0000025F92ACE920> MouseEvent (43, 4) 0
 2026-05-03 14:37:20,812 DEBUG:Processing key: 71
+2026-05-03 14:45:06,459 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:45:08,944 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:45:16,527 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:45:35,785 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:45:53,132 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:46:29,811 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:46:32,984 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:46:36,669 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:46:48,744 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:47:01,864 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:47:17,043 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:47:56,807 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:56:29,709 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:56:32,743 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:56:38,751 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:56:38,771 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:56:38,796 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:56:38,813 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:56:38,833 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:56:38,855 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:56:38,876 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:56:38,896 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:56:38,916 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:56:38,941 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:56:38,958 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:56:38,976 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:56:39,000 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,000 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,016 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,016 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,032 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,032 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,048 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,048 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,064 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,073 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,083 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,083 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,104 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,104 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,114 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,124 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: details
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: parent
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: tree_list
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: ports
+2026-05-03 14:56:39,130 DEBUG:Updating: protocols
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x00000241124A46C0>
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000024113EE1CB0>
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.divider.Divider object at 0x0000024113EE2260>
+2026-05-03 14:56:39,130 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000024113EDE6E0>
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: details
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: parent
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000024113EE24D0>
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.text.Text object at 0x0000024113E8F790>
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000024113EE2810>
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.text.Text object at 0x0000024113E8F6A0>
+2026-05-03 14:56:39,130 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000024113EDE7A0>
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.divider.Divider object at 0x0000024113EE28E0>
+2026-05-03 14:56:39,130 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000024113EDE800>
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: tree_list
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000024113EE1FF0>
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.listbox.ListBox object at 0x0000024113E17490>
+2026-05-03 14:56:39,130 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000024113EDE740>
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: ports
+2026-05-03 14:56:39,130 DEBUG:Updating: protocols
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000024113EE2740>
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.text.Text object at 0x0000024113E8FA60>
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.listbox.ListBox object at 0x0000024113E176F0>
+2026-05-03 14:56:39,130 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000024113EDE860>
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.divider.Divider object at 0x0000024113EE29B0>
+2026-05-03 14:56:39,130 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000024113EDE8C0>
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000024113EE2A80>
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.divider.Divider object at 0x0000024113EE2B50>
+2026-05-03 14:56:39,130 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000024113EDE920>
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000024113EE2C20>
+2026-05-03 14:56:39,130 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000024113EDE980>
+2026-05-03 14:56:39,130 DEBUG:Focus: <asciimatics.widgets.layout.Layout object at 0x0000024113EDE6E0>
+2026-05-03 14:56:39,130 DEBUG:Focus: <asciimatics.widgets.layout.Layout object at 0x0000024113EDE7A0>
+2026-05-03 14:56:39,130 DEBUG:Focus: <asciimatics.widgets.layout.Layout object at 0x0000024113EDE800>
+2026-05-03 14:56:39,130 DEBUG:Focus: <asciimatics.widgets.layout.Layout object at 0x0000024113EDE740>
+2026-05-03 14:56:39,130 DEBUG:Widget focus: <asciimatics.widgets.listbox.ListBox object at 0x0000024113E17490>
+2026-05-03 14:56:39,130 DEBUG:Cloning: IP Tree Manager
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: details
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: parent
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: tree_list
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: ports
+2026-05-03 14:56:39,130 DEBUG:Updating: protocols
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: details
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: parent
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: tree_list
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: ports
+2026-05-03 14:56:39,130 DEBUG:Updating: protocols
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,130 DEBUG:Updating: None
+2026-05-03 14:56:39,135 DEBUG:Updating: None
+2026-05-03 14:56:39,135 DEBUG:Updating: None
+2026-05-03 14:56:39,135 DEBUG:Processing key: d
+2026-05-03 14:56:55,331 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:57:26,100 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:57:57,240 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:58:19,150 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:58:21,993 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:58:35,681 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:58:59,906 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:59:05,253 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:59:12,021 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:59:18,382 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 14:59:24,370 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:59:24,389 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:59:24,412 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:59:24,428 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:59:24,446 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:59:24,463 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:59:24,486 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:59:24,493 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:59:24,514 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:59:24,540 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:59:24,563 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:59:24,576 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 14:59:24,608 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,608 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,622 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,622 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,639 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,639 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,659 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,659 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,685 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,685 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,701 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,701 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,722 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,722 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,733 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,733 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: details
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: parent
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: tree_list
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: ports
+2026-05-03 14:59:24,742 DEBUG:Updating: protocols
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000021D2E2746C0>
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000021D2FC31CB0>
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.divider.Divider object at 0x0000021D2FC32260>
+2026-05-03 14:59:24,742 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000021D2FC2E740>
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: details
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: parent
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000021D2FC324D0>
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.text.Text object at 0x0000021D2E5FF790>
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000021D2FC32810>
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.text.Text object at 0x0000021D2E5FF6A0>
+2026-05-03 14:59:24,742 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000021D2FC2E800>
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.divider.Divider object at 0x0000021D2FC328E0>
+2026-05-03 14:59:24,742 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000021D2FC2E860>
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: tree_list
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000021D2FC31FF0>
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.listbox.ListBox object at 0x0000021D2E587490>
+2026-05-03 14:59:24,742 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000021D2FC2E7A0>
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Updating: ports
+2026-05-03 14:59:24,742 DEBUG:Updating: protocols
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000021D2FC32740>
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.text.Text object at 0x0000021D2E5FFA60>
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.listbox.ListBox object at 0x0000021D2E5876F0>
+2026-05-03 14:59:24,742 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000021D2FC2E8C0>
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,742 DEBUG:Widget blur: <asciimatics.widgets.divider.Divider object at 0x0000021D2FC329B0>
+2026-05-03 14:59:24,742 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000021D2FC2E920>
+2026-05-03 14:59:24,742 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000021D2FC32A80>
+2026-05-03 14:59:24,749 DEBUG:Widget blur: <asciimatics.widgets.divider.Divider object at 0x0000021D2FC32B50>
+2026-05-03 14:59:24,749 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000021D2FC2E980>
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000021D2FC32C20>
+2026-05-03 14:59:24,749 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000021D2FC2E9E0>
+2026-05-03 14:59:24,749 DEBUG:Focus: <asciimatics.widgets.layout.Layout object at 0x0000021D2FC2E740>
+2026-05-03 14:59:24,749 DEBUG:Focus: <asciimatics.widgets.layout.Layout object at 0x0000021D2FC2E800>
+2026-05-03 14:59:24,749 DEBUG:Focus: <asciimatics.widgets.layout.Layout object at 0x0000021D2FC2E860>
+2026-05-03 14:59:24,749 DEBUG:Focus: <asciimatics.widgets.layout.Layout object at 0x0000021D2FC2E7A0>
+2026-05-03 14:59:24,749 DEBUG:Widget focus: <asciimatics.widgets.listbox.ListBox object at 0x0000021D2E587490>
+2026-05-03 14:59:24,749 DEBUG:Cloning: IP Tree Manager
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: details
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: parent
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: tree_list
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: ports
+2026-05-03 14:59:24,749 DEBUG:Updating: protocols
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: details
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: parent
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: tree_list
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: ports
+2026-05-03 14:59:24,749 DEBUG:Updating: protocols
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Updating: None
+2026-05-03 14:59:24,749 DEBUG:Processing key: d
+2026-05-03 14:59:25,858 DEBUG:Processing key: 71
+2026-05-03 15:03:46,355 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 15:12:19,575 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 15:12:29,266 DEBUG:================INICIO RECOPILADO=================
+2026-05-03 15:12:44,297 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 15:12:44,309 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 15:12:44,339 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 15:12:44,356 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 15:12:44,371 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 15:12:44,391 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 15:12:44,412 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 15:12:44,434 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 15:12:44,455 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 15:12:44,472 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 15:12:44,489 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 15:12:44,506 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-03 15:12:44,537 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,537 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,558 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,558 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,579 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,579 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,589 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,589 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,615 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,615 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,630 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,630 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,652 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,652 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,662 ERROR:Transaction failed, rolling back.
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,662 WARNING:Exiting context manager, returning connection to pool
+Traceback (most recent call last):
+  File "C:\Users\user 2\OneDrive - Laureate Mexico\AP_CARRERA\NotasCarrera\obsidian_notes_template-main\Farouk's Homepage - Shiba Inu\Extras\HTB\workscripts\echo\EchoMaze\GATHERINGDB\dao.py", line 136, in seleccionarCoincidenciaFTS
+    cursor.execute(sql, (text,))
+sqlite3.OperationalError: no such table: templates_fts
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: details
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: parent
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: tree_list
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: ports
+2026-05-03 15:12:44,673 DEBUG:Updating: protocols
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000023D1F4A46C0>
+2026-05-03 15:12:44,673 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000023D20E91CB0>
+2026-05-03 15:12:44,673 DEBUG:Widget blur: <asciimatics.widgets.divider.Divider object at 0x0000023D20E91FF0>
+2026-05-03 15:12:44,673 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000023D20E8A8C0>
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: details
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Updating: parent
+2026-05-03 15:12:44,673 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000023D20E924D0>
+2026-05-03 15:12:44,673 DEBUG:Widget blur: <asciimatics.widgets.text.Text object at 0x0000023D20E3F790>
+2026-05-03 15:12:44,673 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000023D20E92810>
+2026-05-03 15:12:44,673 DEBUG:Widget blur: <asciimatics.widgets.text.Text object at 0x0000023D20E3F880>
+2026-05-03 15:12:44,673 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000023D20E8A980>
+2026-05-03 15:12:44,673 DEBUG:Updating: None
+2026-05-03 15:12:44,673 DEBUG:Widget blur: <asciimatics.widgets.divider.Divider object at 0x0000023D20E928E0>
+2026-05-03 15:12:44,678 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000023D20E8A9E0>
+2026-05-03 15:12:44,678 DEBUG:Updating: None
+2026-05-03 15:12:44,678 DEBUG:Updating: tree_list
+2026-05-03 15:12:44,678 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000023D20E92260>
+2026-05-03 15:12:44,678 DEBUG:Widget blur: <asciimatics.widgets.listbox.ListBox object at 0x0000023D20DC7490>
+2026-05-03 15:12:44,678 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000023D20E8A920>
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: ports
+2026-05-03 15:12:44,679 DEBUG:Updating: protocols
+2026-05-03 15:12:44,679 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000023D20E92740>
+2026-05-03 15:12:44,679 DEBUG:Widget blur: <asciimatics.widgets.text.Text object at 0x0000023D20E3FB50>
+2026-05-03 15:12:44,679 DEBUG:Widget blur: <asciimatics.widgets.listbox.ListBox object at 0x0000023D20DC76F0>
+2026-05-03 15:12:44,679 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000023D20E8AA40>
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Widget blur: <asciimatics.widgets.divider.Divider object at 0x0000023D20E929B0>
+2026-05-03 15:12:44,679 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000023D20E8AAA0>
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000023D20E92A80>
+2026-05-03 15:12:44,679 DEBUG:Widget blur: <asciimatics.widgets.divider.Divider object at 0x0000023D20E92B50>
+2026-05-03 15:12:44,679 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000023D20E8AB00>
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Widget blur: <asciimatics.widgets.label.Label object at 0x0000023D20E92C20>
+2026-05-03 15:12:44,679 DEBUG:Blur: <asciimatics.widgets.layout.Layout object at 0x0000023D20E8AB60>
+2026-05-03 15:12:44,679 DEBUG:Focus: <asciimatics.widgets.layout.Layout object at 0x0000023D20E8A8C0>
+2026-05-03 15:12:44,679 DEBUG:Focus: <asciimatics.widgets.layout.Layout object at 0x0000023D20E8A980>
+2026-05-03 15:12:44,679 DEBUG:Focus: <asciimatics.widgets.layout.Layout object at 0x0000023D20E8A9E0>
+2026-05-03 15:12:44,679 DEBUG:Focus: <asciimatics.widgets.layout.Layout object at 0x0000023D20E8A920>
+2026-05-03 15:12:44,679 DEBUG:Widget focus: <asciimatics.widgets.listbox.ListBox object at 0x0000023D20DC7490>
+2026-05-03 15:12:44,679 DEBUG:Cloning: IP Tree Manager
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: details
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: parent
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: tree_list
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: ports
+2026-05-03 15:12:44,679 DEBUG:Updating: protocols
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: details
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: parent
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: tree_list
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: ports
+2026-05-03 15:12:44,679 DEBUG:Updating: protocols
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Updating: None
+2026-05-03 15:12:44,679 DEBUG:Processing key: d
+2026-05-03 15:12:45,625 DEBUG:Processing key: 71

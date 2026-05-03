@@ -8,15 +8,6 @@ import uuid
 
 def bootstrap_auth():
     user_repo = JsonUserRepository("users.json")
-    # Add a default admin user if none exists
-    if not user_repo.get_user_by_username("admin"):
-        user_repo.save_user(User(
-            user_id=str(uuid.uuid4()), 
-            username="admin", 
-            roles=["admin"], 
-            is_admin=True,
-            password="admin"
-        ))
     
     token_expeditor = TokenExpeditor()
     session_manager = SessionManager()

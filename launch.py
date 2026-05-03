@@ -134,6 +134,32 @@ def handle_register(iam, session_manager, register_args):
         return True
     return False
 
+def handle_initial_setup(iam):
+    user_repo = iam.user_repo
+    if not user_repo.get_user_by_username("admin"):
+        print("[!] No administrator account detected.")
+        print("[*] Starting initial EchoMaze setup...")
+        while True:
+            password = getpass.getpass("Set password for 'admin' user: ")
+            confirm = getpass.getpass("Confirm password: ")
+            if password == confirm:
+                if len(password) < 4:
+                    print("[!] Password too short. Use at least 4 characters.")
+                    continue
+                
+                admin_user = User(
+                    user_id=str(uuid.uuid4()),
+                    username="admin",
+                    roles=["admin"],
+                    is_admin=True,
+                    password=password
+                )
+                user_repo.save_user(admin_user)
+                print("[+] Administrator account 'admin' created successfully.")
+                break
+            else:
+                print("[!] Passwords do not match. Try again.")
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description='EchoMaze - Penetration Testing Database & Workflow Manager',
@@ -208,7 +234,11 @@ Examples:
     dao, crud, core, cmd, generic, cli_ingestor, auto, repository, scoring_engine = build_core_stack()
     iam, password_auth, session_manager = bootstrap_auth()
 
+    # Initial setup if needed
+    handle_initial_setup(iam)
+
     # ===== Handle global commands =====
+    # ...
     
     if args.login:
         if not handle_login(iam, password_auth, session_manager):
