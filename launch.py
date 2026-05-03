@@ -16,6 +16,10 @@ from cheatIngestor.adapters.drivers.Autocomplete import AutoCompleter
 from cheatIngestor.models.repository import Configurator
 from logimporter import LogImportManager, validate_import_params
 
+from auth.composition_root import bootstrap_auth
+from auth.adapters.drivers.passwordAuthenticator import PasswordCredential
+import getpass
+
 def build_core_stack():
     dao = GenericDAO()
     crud = CRUD_GATHERINGDB(dao)
@@ -93,6 +97,43 @@ def handle_reload_directory(cmd):
         print(f"[!] Directory reload failed: {str(e)}")
         return False
 
+def handle_login(iam, password_auth, session_manager):
+    print("--- EchoMaze Login ---")
+    username = input("Username: ")
+    password = getpass.getpass("Password: ")
+    
+    creds = PasswordCredential(username, password)
+    token = iam.authenticator(password_auth, creds)
+    
+    if token:
+        session_manager.set_session(token)
+        print(f"[+] Login successful as {username}")
+        return True
+    else:
+        print("[!] Login failed")
+        return False
+
+import uuid
+from auth.core.domain.user import User
+
+def handle_register(iam, session_manager, register_args):
+    if not session_manager.is_authenticated():
+        print("[!] You must be logged in as an administrator to register new users.")
+        return False
+    
+    new_user = User(
+        user_id=str(uuid.uuid4()),
+        username=register_args.username,
+        roles=register_args.roles.split(','),
+        is_admin=register_args.admin,
+        password=register_args.password
+    )
+    
+    if iam.create_user(session_manager.current_token, new_user):
+        print(f"[+] User {register_args.username} registered successfully.")
+        return True
+    return False
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description='EchoMaze - Penetration Testing Database & Workflow Manager',
@@ -101,13 +142,13 @@ def main(argv=None):
 Examples:
   python launch.py --ui                              # Start UI
   python launch.py --import-ops --file history.log   # Import command history
-  python launch.py --import-from-nmap                # Import from nmap scan
-  python launch.py --init-db                         # Initialize database
+  python launch.py register --username op1 --password secret --roles operator
         """
     )
     
     # Global options
     parser.add_argument('--ui', action='store_true', help='Run the asciimatics UI')
+    parser.add_argument('--login', action='store_true', help='Force login before proceeding')
     parser.add_argument('--init-db', action='store_true', help='Initialize the database (create tables)')
     parser.add_argument('--reload-from-directory', action='store_true', help='Reload IPs from the current directory')
     parser.add_argument('--search', type=str, help='Search for techniques by keyword')
@@ -118,6 +159,13 @@ Examples:
     
     # Subcommands
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # register subcommand
+    register_parser = subparsers.add_parser('register', help='Register a new operator (requires admin login)')
+    register_parser.add_argument('--username', required=True, help='New operator username')
+    register_parser.add_argument('--password', required=True, help='New operator password')
+    register_parser.add_argument('--roles', default='operator', help='Comma-separated roles (default: operator)')
+    register_parser.add_argument('--admin', action='store_true', help='Set as administrator')
     
     # import-ops subcommand
     import_ops_parser = subparsers.add_parser(
@@ -158,9 +206,14 @@ Examples:
 
     # Build core infrastructure
     dao, crud, core, cmd, generic, cli_ingestor, auto, repository, scoring_engine = build_core_stack()
+    iam, password_auth, session_manager = bootstrap_auth()
 
     # ===== Handle global commands =====
     
+    if args.login:
+        if not handle_login(iam, password_auth, session_manager):
+            sys.exit(1)
+
     # Initialize database
     if args.init_db:
         DatabaseInitializer.initialize_db(dao=dao)
@@ -176,6 +229,11 @@ Examples:
     
     # Run UI
     if args.ui:
+        # Require login for UI as per specs
+        if not session_manager.is_authenticated():
+             if not handle_login(iam, password_auth, session_manager):
+                 sys.exit(1)
+
         # Make sure cached data is populated before UI
         _ = generic.cachered_ips
         
@@ -195,6 +253,13 @@ Examples:
             print(f'[!] No results found for "{args.search}"')
 
     # ===== Handle subcommands =====
+    
+    # register subcommand
+    if args.command == 'register':
+        if not session_manager.is_authenticated():
+             if not handle_login(iam, password_auth, session_manager):
+                 sys.exit(1)
+        handle_register(iam, session_manager, args)
     
     # import-ops subcommand
     if args.command == 'import-ops':

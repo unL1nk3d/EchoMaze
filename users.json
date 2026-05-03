@@ -1,0 +1,12 @@
+{
+    "admin": {
+        "user_id": "6d694f78-f91d-4fe5-84d5-0206eda6acb9",
+        "username": "admin",
+        "roles": [
+            "admin"
+        ],
+        "is_admin": true,
+        "photo": null,
+        "password": "admin"
+    }
+}
