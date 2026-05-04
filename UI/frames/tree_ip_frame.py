@@ -83,7 +83,10 @@ class TreeIPFrame(Frame, Observer):
         layout_header = Layout([1], fill_frame=False)
         self.add_layout(layout_header)
         layout_header.add_widget(Label("=== IP Hierarchy Tree Browser ==="))
-        layout_header.add_widget(Label("↑/↓: Navigate | →: Expand | ←: Collapse | R: Reload | T: Theme | D: Dashboard | Q: Quit"))
+        help_text = "↑/↓: Nav | →: Exp | ←: Coll | R: Reload | T: Theme | A: Artifacts | Q: Quit"
+        if self.model.is_admin:
+            help_text = "↑/↓: Nav | →: Exp | ←: Coll | R: Reload | T: Theme | A: Artifacts | D: Dash | Q: Quit"
+        layout_header.add_widget(Label(help_text))
         layout_header.add_widget(Divider())
 
         # ========== LAYOUT MAIN (3 columnas) ==========
@@ -495,6 +498,8 @@ class TreeIPFrame(Frame, Observer):
                 raise NextScene("protocols")
             elif event.key_code in [ord('S'), ord('s')]:
                 raise NextScene("search")
+            elif event.key_code in [ord('A'), ord('a')]:
+                raise NextScene("artifacts")
             elif event.key_code == ord('j'):
                 self._show_suggestions()
                 return None
@@ -504,7 +509,10 @@ class TreeIPFrame(Frame, Observer):
             elif event.key_code == ord('o'):
                 raise NextScene('opsec')
             elif event.key_code in [ord('D'), ord('d')]:
-                raise NextScene("admin")
+                if self.model.is_admin:
+                    raise NextScene("admin")
+                else:
+                    self._update_status("[!] Access Denied: Administrator role required")
 
         return super(TreeIPFrame, self).process_event(event)
     def _update_status(self, message):

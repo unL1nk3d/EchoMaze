@@ -20,7 +20,7 @@ from auth.composition_root import bootstrap_auth
 from auth.adapters.drivers.passwordAuthenticator import PasswordCredential
 import getpass
 
-def build_core_stack():
+def build_core_stack(session_manager=None):
     dao = GenericDAO()
     crud = CRUD_GATHERINGDB(dao)
     core = Core(crud, PORT_SERVICE_MAP)
@@ -36,7 +36,7 @@ def build_core_stack():
     ingestor_use_case = IngestorUseCase(documents=cli_ingestor,auto=auto)
     # Create ScoringEngine sharing the same CRUD instance as Core
     scoring_engine = ScoringEngine(crud=crud)
-    generic = GenericModel(repository=core, commands=cmd, ingestor=auto, scoring_engine=scoring_engine)
+    generic = GenericModel(repository=core, commands=cmd, ingestor=auto, scoring_engine=scoring_engine, session_manager=session_manager)
     # Wire GenericModel as observer of ScoringEngine so score_changed events propagate to UI
     scoring_engine.attach(generic)
     return dao, crud, core, cmd, generic, cli_ingestor, auto, repository, scoring_engine
@@ -255,9 +255,11 @@ Examples:
     
     args = parser.parse_args(argv)
 
-    # Build core infrastructure
-    dao, crud, core, cmd, generic, cli_ingestor, auto, repository, scoring_engine = build_core_stack()
+    # Build authentication infrastructure first
     iam, password_auth, session_manager = bootstrap_auth()
+
+    # Build core infrastructure and inject session_manager
+    dao, crud, core, cmd, generic, cli_ingestor, auto, repository, scoring_engine = build_core_stack(session_manager)
 
     # Initial setup if needed
     handle_initial_setup(iam)

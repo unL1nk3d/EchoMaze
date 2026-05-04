@@ -201,13 +201,14 @@ class Observable:
 
 
 class GenericModel(Observable):
-    def __init__(self, repository, commands=None, port_service_map=None, ingestor=None, opsec_hooks=None, scoring_engine=None):
+    def __init__(self, repository, commands=None, port_service_map=None, ingestor=None, opsec_hooks=None, scoring_engine=None, session_manager=None):
         super().__init__()
         self.repo = RepositoryModel(repository)
         self.cmd = CommandModel(commands)
         self.ingestor = ingestor
         self.mapper = UIMapper(port_service_map=port_service_map)
         self.scoring_engine = scoring_engine
+        self.session_manager = session_manager
         # Lazy import to avoid circular dependency
         if opsec_hooks is not None:
             self.opsec_hooks = opsec_hooks
@@ -225,6 +226,15 @@ class GenericModel(Observable):
     def selected_ip(self):
         return self._selected_ip
     
+    @property
+    def is_admin(self):
+        """Check if the current logged in user is an administrator."""
+        if not self.session_manager or not self.session_manager.is_authenticated():
+            return False
+        token = self.session_manager.current_token
+        # Check both for 'admin' and 'administrator' role just in case
+        return any(role.lower() in ["admin", "administrator"] for role in token.roles)
+
     @selected_ip.setter
     def selected_ip(self, value):
         if self._selected_ip != value:
@@ -291,6 +301,50 @@ class GenericModel(Observable):
                 'actions': data['actions']
             }
         return result
+
+    def get_artifacts_for_ip(self, ip):
+        """
+        Obtener artefactos asociados a una IP.
+        """
+        nodes = self.repo.repository.select_ip_by_field('ip', ip)
+        if not nodes:
+            return []
+        return self.repo.repository.select_artifacts_by_node_id(nodes[0].id)
+
+    def add_artifact(self, ip, filename, notes="", noise_score=None):
+        """
+        Registrar un nuevo artefacto para una IP y actualizar el score OPSEC.
+        """
+        repo = self.repo.repository
+        nodes = repo.select_ip_by_field('ip', ip)
+        if not nodes:
+            return False
+        
+        node = nodes[0]
+        from GATHERINGDB.model import Artifacts
+        import datetime
+
+        # Create artifact entity
+        artifact = Artifacts(
+            id=0,
+            filename=filename,
+            node_id=node.id,
+            sha1="", sha256="", md5="", size=0,
+            created_at=datetime.datetime.now().isoformat(),
+            notes=notes,
+            noise_score=noise_score if noise_score is not None else 0.0
+        )
+        
+        # Save to DB
+        if hasattr(repo, 'insert_artifact'):
+            success = repo.insert_artifact(artifact)
+            if success:
+                # Update OPSEC score via ScoringEngine
+                if self.scoring_engine:
+                    self.scoring_engine.register_artifact(ip, filename, noise_score)
+                return True
+        return False
+
     @staticmethod
     def Quickshort(req:list[int]):
         fin = []

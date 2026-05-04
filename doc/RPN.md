@@ -18,3 +18,4 @@ Testeabilidad: Desarrollado. Existen múltiples unit tests (test_scoring.py, tes
 Feature Toggles (Interruptores para apagar sugerencias): FALTANTE / PARCIAL. El documento indica: "Feature toggles SHOULD allow enabling/disabling advice/suggestions/scoring modules individually." Actualmente, los paneles de UI (OpSecPanel) se inicializan por defecto. No hemos añadido una bandera (--disable-opsec) o un archivo config.json para encender o apagar por completo este subsistema en tiempo de ejecución.
 
 
+

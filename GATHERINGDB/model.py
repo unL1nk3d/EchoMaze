@@ -307,8 +307,9 @@ class Actions(BaseEntity):
         return "SELECT * FROM actions WHERE id = ?;"
 
     @classmethod
-    def selectCoincidence(cls):
-        return "SELECT * FROM actions WHERE {} = ?;"
+    def selectCoincidence(cls, field):
+        return f"SELECT * FROM {cls.__name__.lower()} WHERE {field} = ?;"
+
 @dataclass
 class Mitre_attack(BaseEntity):
     mitre_id: str
@@ -345,8 +346,8 @@ class Mitre_attack(BaseEntity):
         return "SELECT * FROM mitre_attack WHERE mitre_id = ?;"
 
     @classmethod
-    def selectCoincidence(cls):
-        return "SELECT * FROM mitre_attack WHERE {} = ?;"
+    def selectCoincidence(cls, field):
+        return f"SELECT * FROM {cls.__name__.lower()} WHERE {field} = ?;"
 
 @dataclass
 class Artifacts(BaseEntity):
@@ -359,6 +360,7 @@ class Artifacts(BaseEntity):
     size: int
     created_at: str
     notes: str
+    noise_score: float
 
     @classmethod
     def get_guid(cls):
@@ -366,13 +368,13 @@ class Artifacts(BaseEntity):
 
     def exportAsTupple(self):
         return (self.filename, self.node_id, self.sha1, self.sha256, self.md5,
-                self.size, self.notes)
+                self.size, self.notes, self.noise_score)
 
     @classmethod
     def insert(cls):
         return """INSERT INTO artifacts 
-            (filename, node_id, sha1, sha256, md5, size, notes) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)"""
+            (filename, node_id, sha1, sha256, md5, size, notes, noise_score) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)"""
 
     @classmethod
     def create_table(cls):
@@ -386,7 +388,8 @@ class Artifacts(BaseEntity):
             size INTEGER,
             created_at TIMESTAMP DEFAULT (datetime('now')),
             notes TEXT,
-            FOREIGN KEY(node_id) REFERENCES nodes(id)
+            noise_score REAL DEFAULT 0.0,
+            FOREIGN KEY(node_id) REFERENCES ip_node(id)
         );"""
 
     @classmethod
@@ -398,8 +401,9 @@ class Artifacts(BaseEntity):
         return "SELECT * FROM artifacts WHERE id = ?;"
 
     @classmethod
-    def selectCoincidence(cls):
-        return "SELECT * FROM artifacts WHERE {} = ?;"
+    def selectCoincidence(cls, field):
+        return f"SELECT * FROM {cls.__name__.lower()} WHERE {field} = ?;"
+
 
 @dataclass
 class Opsec_logs(BaseEntity):
@@ -444,8 +448,8 @@ class Opsec_logs(BaseEntity):
         return "SELECT * FROM opsec_logs WHERE id = ?;"
 
     @classmethod
-    def selectCoincidence(cls):
-        return "SELECT * FROM opsec_logs WHERE {} = ?;"
+    def selectCoincidence(cls, field):
+        return f"SELECT * FROM opsec_logs WHERE {field} = ?;"
 
 
 

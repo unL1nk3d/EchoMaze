@@ -1220,4 +1220,42 @@ Ahora lanzo el flujo automático – cuando termine, te muestro el resultado con
        * Se actualizó el texto de ayuda en la cabecera para incluir la nueva funcionalidad.
 
   Ahora, al presionar 'D' en el explorador de IPs, podrás acceder directamente a la vista de administración para auditar el comportamiento y sigilo de los operadores
-  
+
+
+    Cambios realizados:
+
+   1. Integración con IAM: El GenericModel ahora recibe el SessionManager del sistema de identidad (IAM). Se añadió una propiedad is_admin que verifica dinámicamente si el token de sesión actual posee el rol
+      de "admin" o "administrator".
+   2. Interfaz Adaptativa (TreeIPFrame):
+       * Texto de Ayuda Condicional: La leyenda "D: Dashboard" en la cabecera ahora solo es visible para los administradores. Los operadores normales ven una versión simplificada de la ayuda.
+       * Restricción de Teclado: Se bloqueó el acceso mediante la tecla 'D' para usuarios no autorizados. Si un operador intenta usarla, recibirá un mensaje de "[!] Access Denied" en la barra de estado.
+   3. Seguridad en el Frame (AdminDashboardFrame): Se añadió una validación adicional en el método reset() del dashboard. Si por alguna razón un usuario no administrador lograra navegar hacia esta escena, el
+      sistema lo expulsará automáticamente de vuelta a la vista principal.
+   4. Ajuste en el Arranque (launch.py): Se reestructuró la inicialización en launch.py para asegurar que el sistema de autenticación esté listo antes de construir el modelo de la UI, permitiendo la inyección
+      correcta de la sesión.
+
+  Ahora, el dashboard es una herramienta exclusiva para administradores, manteniendo la privacidad de las métricas de OPSEC y las acciones de otros operadores.
+
+    Mejoras y Funcionalidades:
+
+   1. Gestión de Artefactos:
+       * Modelo de Datos: Se actualizó la clase Artifacts en GATHERINGDB/model.py para incluir el campo noise_score y se corrigió la relación de llave foránea con la tabla ip_node.
+       * Capa CRUD: Se añadieron los métodos insert_artifact y select_artifacts_by_node_id en CRUD_GATHERINGDB para persistir y recuperar archivos asociados a cada IP.
+   2. Impacto en OPSEC (Scoring):
+       * Integración con ScoringEngine: El motor de puntuación ahora reconoce artefactos comunes. Por ejemplo, "droppear" Mimikatz aumenta automáticamente el nivel de ruido del nodo en 50 puntos (ajustados por
+         el perfil de OPSEC del sistema). Otros herramientas como nc.exe o cobaltstrike también tienen puntuaciones base predefinidas.
+   3. Interfaz de Usuario:
+       * Nueva Vista de Artefactos (UI/frames/artifacts_frame.py): Una interfaz sencilla para listar artefactos de la IP seleccionada y registrar nuevos archivos con notas y puntuaciones personalizadas.
+       * Acceso Directo: Se habilitó la tecla 'A' desde la vista principal de árbol para navegar rápidamente al gestor de artefactos.
+   4. Estabilidad de Base de Datos:
+       * Patrón Singleton en Conexiones: Se refactorizó SQLiteConnectionPool para evitar fugas de conexiones y bloqueos de archivos (PermissionError en Windows). Ahora el pool se gestiona de forma centralizada
+         y se cierran correctamente todas las conexiones al finalizar la aplicación o las pruebas.
+       * Corrección de Consultas: Se arregló un error en los modelos donde selectCoincidence no aceptaba parámetros, lo que impedía filtrar artefactos por ID de nodo.
+
+  Verificación:
+  Se ha incluido el archivo de pruebas test/test_artifacts_scoring.py, el cual valida que:
+   * La inserción de un artefacto (ej. mimikatz.exe) incrementa correctamente el noise_score del nodo afectado.
+   * Los artefactos se guardan y recuperan correctamente de la base de datos.
+   * La limpieza de recursos de base de datos funciona sin dejar archivos bloqueados.
+
+  Puedes acceder a esta funcionalidad presionando 'A' sobre cualquier IP en el menú principal.

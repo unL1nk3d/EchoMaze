@@ -16,11 +16,19 @@
         }
     },
     "alice": {
-        "token": "eyJ1c2VyX2lkIjogIjdhMjU0YWQyLTQ0OGUtNDUzOS04YjY1LWI1MDU3ZTdjMzgxYSIsICJyb2xlcyI6IFsib3BlcmF0b3IiXSwgImlzX2FkbWluIjogZmFsc2UsICJwaG90byI6IG51bGwsICJyZXF1aXJlc19wYXNzd29yZF9jaGFuZ2UiOiB0cnVlfQ==.f324e2704925302637670fbaa3ca9dd78ed3219e958a63ac0a27193755c15cf7",
+        "token": "eyJ1c2VyX2lkIjogIjdhMjU0YWQyLTQ0OGUtNDUzOS04YjY1LWI1MDU3ZTdjMzgxYSIsICJyb2xlcyI6IFsib3BlcmF0b3IiXSwgImlzX2FkbWluIjogZmFsc2UsICJwaG90byI6IG51bGwsICJyZXF1aXJlc19wYXNzd29yZF9jaGFuZ2UiOiBmYWxzZX0=.15961ee90d054ae43cf6792383991c2f58b5fabf47101d5bf4072a179099bd5e",
         "password": {
-            "salt": "ysEKEturb+ZCCdZnRkBxGQ==",
+            "salt": "y+m8DSsqomj8u70YSsVebg==",
             "iterations": 100000,
-            "key": "vr3VR/RFOLO1z9XNXZPMjDZCs2YsW+2PWEul1sfd5ek="
+            "key": "916FDNz79wd6CmMmceTu3syeVZvy5V3Z4ahdo8wWniY="
+        }
+    },
+    "celeste": {
+        "token": "eyJ1c2VyX2lkIjogImMwMjMxODI4LWI1NGQtNGVkMi05MmM1LTdhZmJjYTc5ZjI1MSIsICJyb2xlcyI6IFsiYWRtaW4iXSwgImlzX2FkbWluIjogZmFsc2UsICJwaG90byI6IG51bGwsICJyZXF1aXJlc19wYXNzd29yZF9jaGFuZ2UiOiBmYWxzZX0=.2a21d255bea2e4bad6f5fe9ff013acd0769c4c1cfb23d99baa3a803b054ea2d9",
+        "password": {
+            "salt": "2VuHGFBilNTS8tC9l5ooog==",
+            "iterations": 100000,
+            "key": "G4gqqSINwgSQHrhFvTFesu7BVxAAORJDUe6ISSVFYUM="
         }
     }
 }

@@ -64,6 +64,8 @@ class AdminDashboardFrame(Frame):
 
     def reset(self):
         super(AdminDashboardFrame, self).reset()
+        if not self.model.is_admin:
+            raise NextScene("main")
         self.refresh_data()
 
     def refresh_data(self):
