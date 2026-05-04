@@ -14,5 +14,13 @@
             "iterations": 100000,
             "key": "wKpvtehQIGJMo1n9gI+HNvmogL91TSoCCwnWLvmCPkE="
         }
+    },
+    "alice": {
+        "token": "eyJ1c2VyX2lkIjogIjdhMjU0YWQyLTQ0OGUtNDUzOS04YjY1LWI1MDU3ZTdjMzgxYSIsICJyb2xlcyI6IFsib3BlcmF0b3IiXSwgImlzX2FkbWluIjogZmFsc2UsICJwaG90byI6IG51bGwsICJyZXF1aXJlc19wYXNzd29yZF9jaGFuZ2UiOiB0cnVlfQ==.f324e2704925302637670fbaa3ca9dd78ed3219e958a63ac0a27193755c15cf7",
+        "password": {
+            "salt": "ysEKEturb+ZCCdZnRkBxGQ==",
+            "iterations": 100000,
+            "key": "vr3VR/RFOLO1z9XNXZPMjDZCs2YsW+2PWEul1sfd5ek="
+        }
     }
 }

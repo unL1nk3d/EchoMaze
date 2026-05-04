@@ -1202,3 +1202,22 @@ Voy a proceder así:
 - Al finalizar, inmediatamente correré la fase verify para validar que todo funcione y, si pasa, procederé directamente al archive.
 - Todos los artefactos y registros irán tanto a Engram como a archivos en openspec (modo hybrid).
 Ahora lanzo el flujo automático – cuando termine, te muestro el resultado consolidado del ciclo apply → verify → archive.
+
+
+###
+✦ He completado la implementación del Admin Dashboard, el cual permite supervisar las acciones de cada operador y su respectivo nivel de OPSEC.
+
+  Mejoras realizadas:
+   1. Nuevo Frame de Dashboard (UI/frames/admin_dashboard.py):
+       * Muestra una lista de todos los operadores detectados en el sistema.
+       * Incluye un resumen detallado por operador: conteo total de acciones, promedio de ruido (noise score) y un estado de OPSEC (Stealthy, Caution, Critical).
+       * Muestra el historial reciente de comandos ejecutados por el operador seleccionado.
+   2. Lógica de Agregación (UI/models.py):
+       * Se implementó el método get_operator_summary en GenericModel para agrupar y calcular estadísticas a partir de la tabla actions.
+   3. Integración en la UI (UI/ui.py y UI/frames/tree_ip_frame.py):
+       * Se registró la escena admin en el loop principal.
+       * Se añadió el acceso directo mediante la tecla 'D' desde la vista principal de árbol.
+       * Se actualizó el texto de ayuda en la cabecera para incluir la nueva funcionalidad.
+
+  Ahora, al presionar 'D' en el explorador de IPs, podrás acceder directamente a la vista de administración para auditar el comportamiento y sigilo de los operadores
+  

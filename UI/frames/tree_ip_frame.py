@@ -83,7 +83,7 @@ class TreeIPFrame(Frame, Observer):
         layout_header = Layout([1], fill_frame=False)
         self.add_layout(layout_header)
         layout_header.add_widget(Label("=== IP Hierarchy Tree Browser ==="))
-        layout_header.add_widget(Label("↑/↓: Navigate | →: Expand | ←: Collapse | R: Reload | T: Theme | Q: Quit"))
+        layout_header.add_widget(Label("↑/↓: Navigate | →: Expand | ←: Collapse | R: Reload | T: Theme | D: Dashboard | Q: Quit"))
         layout_header.add_widget(Divider())
 
         # ========== LAYOUT MAIN (3 columnas) ==========
@@ -503,6 +503,8 @@ class TreeIPFrame(Frame, Observer):
                 return None
             elif event.key_code == ord('o'):
                 raise NextScene('opsec')
+            elif event.key_code in [ord('D'), ord('d')]:
+                raise NextScene("admin")
 
         return super(TreeIPFrame, self).process_event(event)
     def _update_status(self, message):

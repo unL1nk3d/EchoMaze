@@ -64,6 +64,8 @@ class Core:
         return self.crud.select_all_ips(dao=self.crud.dao)
     def select_all_ports(self):
         return self.crud.select_all_ports(dao=self.crud.dao)
+    def select_all_actions(self):
+        return self.crud.select_all_actions(dao=self.crud.dao)
     def detect_ip_directories(self,base_dir='scan_results'):
         ip_dirs = []
         if not os.path.exists(base_dir):

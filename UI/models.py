@@ -266,6 +266,31 @@ class GenericModel(Observable):
         if hasattr(repo, 'select_all_actions'):
             return repo.select_all_actions()
         return None
+
+    def get_operator_summary(self):
+        """
+        Obtener un resumen de acciones por operador.
+        
+        Returns:
+            Dict: {operator_name: {'count': int, 'avg_noise': float, 'actions': list}}
+        """
+        actions = self.get_all_actions() or []
+        summary = defaultdict(lambda: {'count': 0, 'total_noise': 0.0, 'actions': []})
+        
+        for act in actions:
+            op = act.operator or "unknown"
+            summary[op]['count'] += 1
+            summary[op]['total_noise'] += act.noise_score or 0.0
+            summary[op]['actions'].append(act)
+            
+        result = {}
+        for op, data in summary.items():
+            result[op] = {
+                'count': data['count'],
+                'avg_noise': data['total_noise'] / data['count'] if data['count'] > 0 else 0.0,
+                'actions': data['actions']
+            }
+        return result
     @staticmethod
     def Quickshort(req:list[int]):
         fin = []

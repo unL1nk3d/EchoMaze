@@ -1,3 +1,4 @@
+from UI.frames.admin_dashboard import AdminDashboardFrame
 from UI.frames.IPframe import IPFrame
 from UI.frames.searchFrame import SearchFrame
 from UI.frames.ProtocolFrame import ProtocolFrame
@@ -31,7 +32,8 @@ def demo(screen,model):
         # Scene([IPFrame(screen,model)], -1, name="main"),
         Scene([SearchFrame(screen,model)], -1,name="search"),
         Scene([ProtocolFrame(screen,model)], -1, name="protocols"),  # ip_index se actualiza dinámicamente
-        Scene([opsec], -1, name="opsec")
+        Scene([opsec], -1, name="opsec"),
+        Scene([AdminDashboardFrame(screen, model)], -1, name="admin")
     ]
     screen.play(scenes, stop_on_resize=True, start_scene=scenes[0])
 
