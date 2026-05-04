@@ -315,7 +315,7 @@ class GenericModel(Observable):
                 if result and result.templates:
                     suggestions.extend(result.templates)
             # Si no hay específicos, buscar generales de pivoting
-        return []
+        return [] or suggestions
     def get_generic_suggestions_for_ip(self,ip):
         suggestions = []
         result = self.ingestor.searchCoincidence("pivoting")

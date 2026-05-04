@@ -64,7 +64,8 @@ class JsonUserRepository(IUserRepository):
                                     roles=payload['roles'],
                                     is_admin=payload['is_admin'],
                                     photo=payload.get('photo'),
-                                    password=user_data.get('password')
+                                    password=user_data.get('password'),
+                                    requires_password_change=payload.get('requires_password_change', False)
                                 )
                                 self._users[username] = user
                             else:
@@ -84,7 +85,8 @@ class JsonUserRepository(IUserRepository):
                 "user_id": user.user_id,
                 "roles": user.roles,
                 "is_admin": user.is_admin,
-                "photo": user.photo
+                "photo": user.photo,
+                "requires_password_change": user.requires_password_change
             }
             
             data[username] = {

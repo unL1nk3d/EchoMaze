@@ -113,6 +113,26 @@ def handle_login(iam, password_auth, session_manager):
         print("[!] Login failed")
         return False
 
+def handle_forced_password_change(iam, session_manager):
+    print("[!] SECURITY POLICY: You must change your password before proceeding.")
+    while True:
+        new_password = getpass.getpass("New password: ")
+        confirm = getpass.getpass("Confirm new password: ")
+        if new_password == confirm:
+            if len(new_password) < 4:
+                print("[!] Password too short.")
+                continue
+            
+            if iam.change_password(session_manager.current_token, new_password):
+                print("[+] Password changed successfully. Please log in again.")
+                session_manager.clear_session()
+                return True
+            else:
+                print("[!] Error updating password.")
+                return False
+        else:
+            print("[!] Passwords do not match.")
+
 import uuid
 from auth.core.domain.user import User
 
@@ -121,12 +141,17 @@ def handle_register(iam, session_manager, register_args):
         print("[!] You must be logged in as an administrator to register new users.")
         return False
     
+    if session_manager.current_token.restricted:
+        print("[!] Your session is restricted. Please change your password first.")
+        return False
+
     new_user = User(
         user_id=str(uuid.uuid4()),
         username=register_args.username,
         roles=register_args.roles.split(','),
         is_admin=register_args.admin,
-        password=register_args.password
+        password=register_args.password,
+        requires_password_change=True
     )
     
     if iam.create_user(session_manager.current_token, new_user):
@@ -237,24 +262,36 @@ Examples:
     # Initial setup if needed
     handle_initial_setup(iam)
 
+    def check_restriction():
+        if session_manager.is_authenticated() and session_manager.current_token.restricted:
+            if not handle_forced_password_change(iam, session_manager):
+                sys.exit(1)
+            # Re-auth
+            print("[*] Re-authentication required.")
+            if not handle_login(iam, password_auth, session_manager):
+                sys.exit(1)
+
     # ===== Handle global commands =====
-    # ...
     
     if args.login:
         if not handle_login(iam, password_auth, session_manager):
             sys.exit(1)
+        check_restriction()
 
     # Initialize database
     if args.init_db:
+        check_restriction()
         DatabaseInitializer.initialize_db(dao=dao)
         print('[+] Database initialized')
 
     # Import from nmap
     if args.import_from_nmap:
+        check_restriction()
         handle_import_nmap(cmd, args.nmap_file)
 
     # Reload from directory
     if args.reload_from_directory:
+        check_restriction()
         handle_reload_directory(cmd)
     
     # Run UI
@@ -263,6 +300,8 @@ Examples:
         if not session_manager.is_authenticated():
              if not handle_login(iam, password_auth, session_manager):
                  sys.exit(1)
+        
+        check_restriction()
 
         # Make sure cached data is populated before UI
         _ = generic.cachered_ips
@@ -274,6 +313,7 @@ Examples:
     
     # Search techniques
     if args.search:
+        check_restriction()
         result = auto.searchCoincidence(args.search)
         if result and hasattr(result, 'templates'):
             print(f'[+] Search results for "{args.search}":')
@@ -289,14 +329,17 @@ Examples:
         if not session_manager.is_authenticated():
              if not handle_login(iam, password_auth, session_manager):
                  sys.exit(1)
+        check_restriction()
         handle_register(iam, session_manager, args)
     
     # import-ops subcommand
     if args.command == 'import-ops':
+        check_restriction()
         handle_import_ops(crud, args)
     
     # ingest subcommand
     elif args.command == 'ingest':
+        check_restriction()
         if args.document:
             cli_ingestor.ingestJsonDocument(args.document)
             print('[+] Document ingested')

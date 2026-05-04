@@ -32,7 +32,7 @@ class TestAuthModule(unittest.TestCase):
         self.assertIsInstance(token, Token)
         self.assertEqual(token.user, "operator1")
         # Note: auth_method is now the class name in IAM
-        self.assertEqual(token.encode_token(), "operator1.admin.1.PasswordAuthenticator")
+        self.assertEqual(token.encode_token(), "operator1.admin.1.PasswordAuthenticator.unrestricted")
 
     def test_failed_login_wrong_password(self):
         credentials = PasswordCredential(username="operator1", password="wrong")
@@ -59,6 +59,42 @@ class TestAuthModule(unittest.TestCase):
         
         result = self.iam.create_user(operator_token, new_user)
         self.assertFalse(result)
+
+    def test_forced_password_reset_flow(self):
+        # 1. Admin creates a user (it will have requires_password_change=True by default in handle_register, 
+        # but here we test the IAM/Domain logic)
+        new_user = User(
+            user_id="4", 
+            username="temp_user", 
+            roles=["operator"], 
+            password="temp_password", 
+            requires_password_change=True
+        )
+        self.user_repo.save_user(new_user)
+        
+        # 2. Login with temp user
+        creds = PasswordCredential(username="temp_user", password="temp_password")
+        token = self.iam.authenticator(self.auth_provider, creds)
+        
+        # 3. Verify token is restricted
+        self.assertIsNotNone(token)
+        self.assertTrue(token.restricted)
+        self.assertIn("restricted", token.encode_token())
+        
+        # 4. Change password
+        result = self.iam.change_password(token, "new_secure_password")
+        self.assertTrue(result)
+        
+        # 5. Verify user is no longer restricted
+        updated_user = self.user_repo.get_user_by_username("temp_user")
+        self.assertFalse(updated_user.requires_password_change)
+        
+        # 6. Login again and verify token is unrestricted
+        new_creds = PasswordCredential(username="temp_user", password="new_secure_password")
+        new_token = self.iam.authenticator(self.auth_provider, new_creds)
+        self.assertIsNotNone(new_token)
+        self.assertFalse(new_token.restricted)
+        self.assertIn("unrestricted", new_token.encode_token())
 
 if __name__ == "__main__":
     unittest.main()

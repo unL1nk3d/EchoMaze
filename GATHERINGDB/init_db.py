@@ -1,5 +1,6 @@
 from GATHERINGDB.dao import GenericDAO,Transaction#,log
-from GATHERINGDB.model import IPNode,Ports#,Templates
+from GATHERINGDB.model import (IPNode,Ports,Templates,WorkflowScoreConfig,
+PivotHistory,Actions,Mitre_attack,Artifacts,Opsec_logs)
 import sqlite3
 import os
 class DatabaseInitializer:
@@ -7,11 +8,16 @@ class DatabaseInitializer:
     @classmethod
     def initialize_db(cls,dao:GenericDAO=None):
         # crear la tabla si no existe
+        models = [
+            IPNode,Ports,Templates,WorkflowScoreConfig,
+            PivotHistory,Actions,Mitre_attack,Artifacts,Opsec_logs
+        ]
         with dao.conn() as connection:
             with Transaction(connection,dao.conn) as cursor:
-                cursor.execute(IPNode.create_table())
-                cursor.execute(Ports.create_table())
-                #cursor.execute(Templates.create_table())
+                for x in models:
+                    if not hasattr(x,'create_table'):
+                        continue
+                    cursor.execute(x.create_table())
     @classmethod
     def check_db_created(cls,core,dao):
         try:

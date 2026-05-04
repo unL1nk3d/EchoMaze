@@ -4,7 +4,7 @@ from auth.core.domain.user import User
 
 class ITokenExpeditor(ABC):
     @abstractmethod
-    def expedit_token(self, user: User, auth_method: str) -> Token:
+    def expedit_token(self, user: User, auth_method: str, restricted: bool = False) -> Token:
         ...
 
     @abstractmethod

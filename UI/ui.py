@@ -24,7 +24,7 @@ def demo(screen,model):
     scenes = [
         
         Scene([tree_frame], -1, name="main"),
-        # Scene([SuggestionsFrame(screen,model)],-1,name='suggestions'),
+        #Scene([SuggestionsFrame(screen,model)],-1,name='suggestions'),
         # si suggestion se agrega como un popup no puede estar registrado como scene
         # o se crashea la app
         Scene([TerminalFrame(screen,model)],-1,name='terminal'),

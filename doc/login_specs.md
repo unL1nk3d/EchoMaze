@@ -44,12 +44,12 @@ password or auth0
 
 
 ### proposes login 
-  1. Flujo de Inicialización Interactiva (Bootstrap)
+  1. Flujo de Inicialización Interactiva (Bootstrap) DONE
   Modificar el proceso de primera ejecución para que, en lugar de crear automáticamente la cuenta
   admin:admin, el sistema detecte que no hay usuarios y solicite interactivamente al operador
   configurar la contraseña del administrador principal. Esto se integraría en el comando --init-db.
 
-  2. Política de "Forced Password Reset"
+  2. Política de "Forced Password Reset" DONE
   Implementar un flag requires_password_change en el modelo de usuario.
    * Lógica: Si el IAM detecta un inicio de sesión con una contraseña marcada como "temporal" o "por
      defecto", el token devuelto incluirá un estado de "Restricción".
@@ -68,4 +68,26 @@ password or auth0
   Como el repositorio ahora usa el hash del admin para firmar tokens, forzar el cambio de contraseña
   obligará al sistema a re-firmar la base de datos de usuarios con una nueva clave derivada de la
   contraseña segura, asegurando que el "secreto" del sistema no sea conocido por defecto.
-  
+
+
+### work 
+
+  Cambios realizados:
+
+   1. Modelo de Usuario Actualizado: Se añadió el flag requires_password_change al dominio User. Por defecto, todos los nuevos usuarios registrados a través del comando register tendrán este flag activado.
+   2. Tokens con Estado de Restricción: El servicio IAM ahora detecta si un usuario tiene pendiente un cambio de contraseña. En tal caso, emite un token marcado como restricted. El formato del token se ha
+      extendido a: user.roles.id.auth.restricted/unrestricted.
+   3. Bloqueo en launch.py:
+       * Se implementó la lógica check_restriction() que se ejecuta después de cada inicio de sesión y antes de comandos críticos (UI, Import, Ingest, etc.).
+       * Si el token está restringido, el sistema bloquea todas las acciones y lanza un flujo obligatorio de cambio de contraseña.
+   4. Flujo de Cambio de Contraseña:
+       * Se añadió el método change_password en el IAM.
+       * En la CLI, el usuario debe ingresar y confirmar su nueva contraseña. Tras el cambio exitoso, la sesión se cierra y se requiere una re-autenticación con las nuevas credenciales.
+   5. Persistencia Segura: El JsonUserRepository ahora persiste el estado del flag requires_password_change dentro del token firmado en el repositorio.
+
+  Verificación:
+   * He añadido un nuevo test de integración test_forced_password_reset_flow en test/test_auth.py que valida todo el ciclo: creación de usuario temporal -> login restringido -> cambio de contraseña -> login
+     desbloqueado.
+   * Resultados: Todos los tests (10 en total entre auditoría e integración) han pasado exitosamente.
+
+  El sistema ahora obliga a los operadores a establecer sus propias contraseñas seguras antes de poder interactuar con cualquier funcionalidad de EchoMaze.

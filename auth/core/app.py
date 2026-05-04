@@ -17,8 +17,21 @@ class IAM(Authenticate):
             if username:
                 user = self.user_repo.get_user_by_username(username)
                 if user:
-                    return self.token_expeditor.expedit_token(user, auth_provider.__class__.__name__)
+                    return self.token_expeditor.expedit_token(
+                        user, 
+                        auth_provider.__class__.__name__,
+                        restricted=user.requires_password_change
+                    )
         return None
+
+    def change_password(self, current_token: Token, new_password: str) -> bool:
+        user = self.user_repo.get_user_by_username(current_token.user)
+        if user:
+            user.password = new_password
+            user.requires_password_change = False
+            self.user_repo.save_user(user)
+            return True
+        return False
 
     def create_user(self, admin_token: Token, new_user: User) -> bool:
         # Check if the person performing the action is an admin

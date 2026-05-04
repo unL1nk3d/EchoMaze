@@ -62,6 +62,8 @@ class LogImportManager:
             self.import_report = report
             return 0, report
         
+        self.import_report = report
+        
         # Guardar en DB
         saved_count = self._save_events_to_db(
             events,
@@ -70,7 +72,6 @@ class LogImportManager:
             mitre_ttp_id=mitre_ttp_id
         )
         
-        self.import_report = report
         return saved_count, report
     
     def import_from_content(
@@ -100,6 +101,8 @@ class LogImportManager:
             self.import_report = report
             return 0, report
         
+        self.import_report = report
+        
         saved_count = self._save_events_to_db(
             events,
             operator=operator,
@@ -107,7 +110,6 @@ class LogImportManager:
             mitre_ttp_id=mitre_ttp_id
         )
         
-        self.import_report = report
         return saved_count, report
     
     def _save_events_to_db(
@@ -144,8 +146,14 @@ class LogImportManager:
                 )
                 
                 # Insertar en DB
-                self.crud.insert_action(action)
-                saved += 1
+                if self.crud.insert_action(action):
+                    saved += 1
+                else:
+                    if self.import_report:
+                        self.import_report.add_error(
+                            0,
+                            f"Failed to save command '{event.command}': Database insertion failed"
+                        )
             
             except Exception as e:
                 # Log error pero continúa con el siguiente evento
