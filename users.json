@@ -1,34 +1,18 @@
 {
     "admin": {
-        "token": "eyJ1c2VyX2lkIjogIjEzY2U3Y2M4LTgwMjAtNDQ0MS1iNWM2LTQ1OTNjZWM1NDdlMyIsICJyb2xlcyI6IFsiYWRtaW4iXSwgImlzX2FkbWluIjogdHJ1ZSwgInBob3RvIjogbnVsbCwgInJlcXVpcmVzX3Bhc3N3b3JkX2NoYW5nZSI6IGZhbHNlfQ==.4f51fd673e7aaf9ecbfc9814d730b3c12fcf21fc6531ce6f78d5c40786f2735e",
+        "token": "eyJ1c2VyX2lkIjogImQ2MzllZmRhLTI2NDItNDcyNC04YTM5LWU4MDU1MGZlZjE0MSIsICJyb2xlcyI6IFsiYWRtaW4iXSwgImlzX2FkbWluIjogdHJ1ZSwgInBob3RvIjogbnVsbCwgInJlcXVpcmVzX3Bhc3N3b3JkX2NoYW5nZSI6IGZhbHNlfQ==.ddecdfb9e6a110bafe2ed640daae79c4872db470a59dbb03ebf63a938b653e47",
         "password": {
-            "salt": "iQdwX593F7nJKlotpTtDLA==",
+            "salt": "XKDJXITaqxsqBxB8rLmLDA==",
             "iterations": 100000,
-            "key": "FlGXt3HlZcFA10zNnK2/5bB9OX1uGMGJFcGhOC3Nz0U="
-        }
-    },
-    "op1": {
-        "token": "eyJ1c2VyX2lkIjogIjMwMjlkYWU3LTM5NjctNDI0Mi1iMzFmLTkwY2I4ZjFmNDU4YSIsICJyb2xlcyI6IFsib3BlcmF0b3IiXSwgImlzX2FkbWluIjogZmFsc2UsICJwaG90byI6IG51bGwsICJyZXF1aXJlc19wYXNzd29yZF9jaGFuZ2UiOiB0cnVlfQ==.fd198d050b508c6f701c89e58688455fdc33d01c2fa152a86fa13da29c3ed445",
-        "password": {
-            "salt": "msq/ai6hVR42ICBjayqFQA==",
-            "iterations": 100000,
-            "key": "wKpvtehQIGJMo1n9gI+HNvmogL91TSoCCwnWLvmCPkE="
+            "key": "JQngCZdTSD4Q97+LS8WSDEZ9tnaRfRcUXMOr8nLtYQY="
         }
     },
     "alice": {
-        "token": "eyJ1c2VyX2lkIjogIjdhMjU0YWQyLTQ0OGUtNDUzOS04YjY1LWI1MDU3ZTdjMzgxYSIsICJyb2xlcyI6IFsib3BlcmF0b3IiXSwgImlzX2FkbWluIjogZmFsc2UsICJwaG90byI6IG51bGwsICJyZXF1aXJlc19wYXNzd29yZF9jaGFuZ2UiOiBmYWxzZX0=.15961ee90d054ae43cf6792383991c2f58b5fabf47101d5bf4072a179099bd5e",
+        "token": "eyJ1c2VyX2lkIjogIjI1MGNjNTM1LTJmODktNGFlZS05Zjg0LWZjN2I4ZDU2NzlhNiIsICJyb2xlcyI6IFsib3BlcmF0b3IiXSwgImlzX2FkbWluIjogZmFsc2UsICJwaG90byI6IG51bGwsICJyZXF1aXJlc19wYXNzd29yZF9jaGFuZ2UiOiB0cnVlfQ==.3cdabb141759b97e9f783ed589232ef6d4d84488fb0b7cfcba8e0fc4365b8a3c",
         "password": {
-            "salt": "y+m8DSsqomj8u70YSsVebg==",
+            "salt": "v9d+vD4NIADYrhbMOhjKVQ==",
             "iterations": 100000,
-            "key": "916FDNz79wd6CmMmceTu3syeVZvy5V3Z4ahdo8wWniY="
-        }
-    },
-    "celeste": {
-        "token": "eyJ1c2VyX2lkIjogImMwMjMxODI4LWI1NGQtNGVkMi05MmM1LTdhZmJjYTc5ZjI1MSIsICJyb2xlcyI6IFsiYWRtaW4iXSwgImlzX2FkbWluIjogZmFsc2UsICJwaG90byI6IG51bGwsICJyZXF1aXJlc19wYXNzd29yZF9jaGFuZ2UiOiBmYWxzZX0=.2a21d255bea2e4bad6f5fe9ff013acd0769c4c1cfb23d99baa3a803b054ea2d9",
-        "password": {
-            "salt": "2VuHGFBilNTS8tC9l5ooog==",
-            "iterations": 100000,
-            "key": "G4gqqSINwgSQHrhFvTFesu7BVxAAORJDUe6ISSVFYUM="
+            "key": "Jy7GuP+0e50QHJOBKmObezpvvl+qLj6vz47lQ5Zd2vk="
         }
     }
 }
