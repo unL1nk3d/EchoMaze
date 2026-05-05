@@ -178650,3 +178650,90 @@ NoneType: None
 NoneType: None
 2026-05-03 01:12:23,698 WARNING:Exiting context manager, returning connection to pool
 NoneType: None
+2026-05-05 13:16:44,764 DEBUG:================INICIO RECOPILADO=================
+2026-05-05 13:16:44,893 ERROR:[-] Error deleting action 1: DB error
+2026-05-05 13:16:44,894 ERROR:[-] Error deleting action 999: No Action found with id 999
+2026-05-05 13:16:44,895 INFO:[+] Action 1 deleted
+2026-05-05 13:16:44,908 ERROR:[-] Error inserting action: DB connection error
+2026-05-05 13:16:44,908 ERROR:[-] Error inserting action: No IPNode found with id 999
+2026-05-05 13:16:44,910 INFO:[+] Action inserted: nmap_scan for node 1 with noise_score: 0.3
+2026-05-05 13:16:44,917 ERROR:[-] Error selecting actions: DB error
+2026-05-05 13:16:44,920 ERROR:[-] Error updating action 999: No Action found with id 999
+2026-05-05 13:16:44,922 INFO:[+] Action 1 updated
+2026-05-05 13:16:44,924 INFO:[+] Action 1 updated
+2026-05-05 13:16:44,925 ERROR:[-] Error deleting artifact 1: DB error
+2026-05-05 13:16:44,926 ERROR:[-] Error deleting artifact 999: No Artifact found with id 999
+2026-05-05 13:16:44,928 INFO:[+] Artifact 1 deleted
+2026-05-05 13:16:44,929 ERROR:[-] Error inserting artifact: DB connection error
+2026-05-05 13:16:44,931 INFO:[+] Artifact inserted: report.txt for node 1
+2026-05-05 13:16:44,931 ERROR:[-] Error inserting artifact: No IPNode found with id 999
+2026-05-05 13:16:44,933 INFO:[+] Artifact inserted: scan_results.xml for node 1
+2026-05-05 13:16:44,935 ERROR:[-] Error selecting artifacts: DB error
+2026-05-05 13:16:44,948 ERROR:[-] Error updating artifact 999: No Artifact found with id 999
+2026-05-05 13:16:44,949 INFO:[+] Artifact 1 updated
+2026-05-05 13:16:44,951 INFO:[+] Artifact 1 updated
+2026-05-05 13:16:44,952 INFO:[+] Artifact 1 updated
+2026-05-05 13:16:44,961 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:44,966 WARNING:[!] CREATING A NEW DATABASE!
+2026-05-05 13:16:44,969 ERROR:[-] error deleting node
+ No IPNode found with id 99
+2026-05-05 13:16:44,973 ERROR:[-] error inserting node
+ No IPNode found with id 99
+2026-05-05 13:16:44,978 ERROR:[-] error selecting nodes by field
+ DB error
+2026-05-05 13:16:44,984 ERROR:[-] error updating node
+ No IPNode found with id 99
+2026-05-05 13:16:44,985 WARNING:[!] CREATING A NEW DATABASE!
+2026-05-05 13:16:44,999 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,002 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,007 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,008 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,012 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,013 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,016 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,021 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,024 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,027 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,030 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,033 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,034 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,036 WARNING:Eliminando registro con id 1 usando DELETE FROM pivot_history WHERE id=? y valores (1,)
+2026-05-05 13:16:45,038 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,039 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,041 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,046 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,048 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,052 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,054 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,058 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,059 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,060 WARNING:Eliminando registro con id 1 usando DELETE FROM workflow_score_config WHERE id=? y valores (1,)
+2026-05-05 13:16:45,061 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,062 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
+2026-05-05 13:16:45,065 WARNING:Exiting context manager, returning connection to pool
+NoneType: None
