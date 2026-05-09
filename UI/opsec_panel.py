@@ -43,7 +43,7 @@ class OpSecPanel(Frame, Observer):
         self.service = service
         self._state = "ok"  # ok | pending | error
         self.global_entropy = 0.0
-        self.global_entropy_warning = """
+        self.global_entropy_warning = ""
         self._pending_update = False
         self._debounce_timer = None
         self._last_render_data = None
@@ -61,11 +61,11 @@ class OpSecPanel(Frame, Observer):
     # ===== Observer interface =====
 
     def observer_update(self, event_type: str, payload: dict):
-        """
+        '''
         Called by Observable subjects when an event occurs.
         Updates internal state and schedules a debounced redraw.
         In error state, data is updated but NO redraw occurs.
-        """
+        '''
         try:
             # Always update data regardless of state
             if event_type == "score_changed":
