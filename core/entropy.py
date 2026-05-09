@@ -95,3 +95,16 @@ def calculate_noise_score(probability):
     if probability <= 0 or probability > 1.0:
         probability = 1.0
     return -math.log2(probability) if probability > 0 and probability < 1.0 else 0.0
+
+
+def get_entropy_warning(entropia):
+    """
+    Devuelve un mensaje de advertencia basado en el nivel de entropía global.
+    A mayor entropía, mayor probabilidad de detección en el sistema.
+    """
+    if entropia < 2.0:
+        return "Baja entropía. Sistema poco ruidoso. (Poco detectable)"
+    elif entropia < 4.0:
+        return "Media entropía. Actividad mixta detectada. (Moderadamente detectable)"
+    else:
+        return "ALTA ENTROPÍA. Advertencia: El sistema exhibe alta variabilidad de eventos, alta probabilidad de detección."

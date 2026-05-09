@@ -42,6 +42,8 @@ class OpSecPanel(Frame, Observer):
         self.pivot_path = pivot_path or []
         self.service = service
         self._state = "ok"  # ok | pending | error
+        self.global_entropy = 0.0
+        self.global_entropy_warning = ""
         self._pending_update = False
         self._debounce_timer = None
         self._last_render_data = None
@@ -59,11 +61,11 @@ class OpSecPanel(Frame, Observer):
     # ===== Observer interface =====
 
     def observer_update(self, event_type: str, payload: dict):
-        """
+        '''
         Called by Observable subjects when an event occurs.
         Updates internal state and schedules a debounced redraw.
         In error state, data is updated but NO redraw occurs.
-        """
+        '''
         try:
             # Always update data regardless of state
             if event_type == "score_changed":
@@ -84,6 +86,13 @@ class OpSecPanel(Frame, Observer):
                         self.noise_score = data.get("noise_score", self.noise_score)
                         self.service = data.get("service", self.service)
                         self.pivot_path = data.get("pivot_path", self.pivot_path)
+
+                        # Load global entropy
+                        if hasattr(self.model, 'repo') and self.model.repo and hasattr(self.model.repo, 'crud'):
+                            from core.entropy import calcular_entropia, get_entropy_warning
+                            historial = self.model.repo.crud.select_all_actions()
+                            self.global_entropy = calcular_entropia(historial)
+                            self.global_entropy_warning = get_entropy_warning(self.global_entropy)
                     except Exception:
                         self._state = "error"
                         return
@@ -178,6 +187,9 @@ class OpSecPanel(Frame, Observer):
             label = f"[No current OpSec suggestions] (Noise Score: {self.noise_score:.2f})" if self.noise_score is not None else "[No current OpSec suggestions]"
         else:
             label = f"[OpSec Guidance (Noise Score: {self.noise_score:.2f})]\n- " + label if self.noise_score is not None else "[OpSec Guidance]\n- " + label
+
+        if hasattr(self, 'global_entropy_warning') and self.global_entropy_warning:
+            label += f"\n\n[Global Entropy: {self.global_entropy:.2f}]\n{self.global_entropy_warning}"
 
         # Add state indicator
         if self._state == "error":
