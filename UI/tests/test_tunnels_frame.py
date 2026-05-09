@@ -14,6 +14,7 @@ class TestTunnelsDashboardFrame(unittest.TestCase):
         
         self.model = MagicMock()
         self.tunnels_usecase = MagicMock()
+        self.tunnels_usecase.check_interval = 60
         self.model.tunnels = self.tunnels_usecase
         
         # Sample IPs for selection testing
@@ -25,7 +26,11 @@ class TestTunnelsDashboardFrame(unittest.TestCase):
         # Sample tunnels for list testing
         self.tunnel1 = MagicMock(id=1, source_ip='192.168.1.1', local_port=8080, dest_ip='10.0.0.1', remote_port=80, status='active', is_hanging=False)
         self.tunnels_usecase.get_all_tunnels.return_value = [self.tunnel1]
-        self.tunnels_usecase.get_tunnel_stats.return_value = {'total': 1, 'active': 1, 'hanging': 0}
+        self.tunnels_usecase.get_tunnel_stats.return_value = {
+            'total': 1, 'active': 1, 'hanging': 0, 
+            'disconnected': 0, 'deactivated': 0, 
+            'activating': 0, 'filtered': 0
+        }
 
         # Global patch for Frame.fix to avoid layout calculation issues with mocks
         with patch('asciimatics.widgets.Frame.fix'):
@@ -43,13 +48,19 @@ class TestTunnelsDashboardFrame(unittest.TestCase):
         """Verify that _refresh_data updates stats and tunnel list."""
         self.tunnel2 = MagicMock(id=2, source_ip='192.168.1.2', local_port=9090, dest_ip=None, remote_port=None, status='disconnected', is_hanging=True)
         self.tunnels_usecase.get_all_tunnels.return_value = [self.tunnel1, self.tunnel2]
-        self.tunnels_usecase.get_tunnel_stats.return_value = {'total': 2, 'active': 1, 'hanging': 1}
+        self.tunnels_usecase.get_tunnel_stats.return_value = {
+            'total': 2, 'active': 1, 'hanging': 1, 
+            'disconnected': 1, 'deactivated': 0, 
+            'activating': 0, 'filtered': 0
+        }
         
         self.frame._refresh_data()
         
         self.assertEqual(len(self.frame.tunnels_list.options), 2)
         self.assertIn("[HANGING]", self.frame.tunnels_list.options[1][0])
-        self.assertIn("Stats - Total: 2", self.frame.stats_label.text)
+        self.assertIn("Stats - Tot:2", self.frame.stats_label.text)
+        self.assertIn("Act:1", self.frame.stats_label.text)
+        self.assertIn("Disc:1", self.frame.stats_label.text)
 
     def test_add_tunnel(self):
         """Verify that _add_tunnel calls the use case with correct data."""
@@ -70,6 +81,42 @@ class TestTunnelsDashboardFrame(unittest.TestCase):
         
         self.tunnels_usecase.delete_tunnel.assert_called_with(1)
         self.tunnels_usecase.get_all_tunnels.assert_called()
+
+    def test_set_policy(self):
+        """Verify that _set_policy updates the use case check interval."""
+        def mock_set_policy(val):
+            self.tunnels_usecase.check_interval = val
+        self.tunnels_usecase.set_connection_check_policy.side_effect = mock_set_policy
+
+        self.frame.check_interval_text.value = "45"
+        self.frame._set_policy()
+        
+        self.tunnels_usecase.set_connection_check_policy.assert_called_with(45)
+        self.assertEqual(self.frame.check_interval_text.value, "45")
+
+    def test_activate_deactivate_buttons(self):
+        """Verify that activate/deactivate buttons call the use case."""
+        self.frame.tunnels_list.value = 1
+        
+        self.frame._activate_tunnel()
+        self.tunnels_usecase.activate_tunnel.assert_called_with(1)
+        
+        self.frame._set_activating()
+        self.tunnels_usecase.set_activating_status.assert_called_with(1)
+        
+        self.frame._deactivate_tunnel()
+        self.tunnels_usecase.deactivate_tunnel.assert_called_with(1)
+
+    def test_technique_and_beacon_buttons(self):
+        """Verify tech selection and beacon trigger call the use case."""
+        self.frame.tunnels_list.value = 1
+        self.frame.technique_list.value = "beaconing"
+        
+        self.frame._set_technique()
+        self.tunnels_usecase.set_tunnel_technique.assert_called_with(1, "beaconing")
+        
+        self.frame._send_beacon()
+        self.tunnels_usecase.process_implant_beacon.assert_called_with(1)
 
     def test_process_event_s_key(self):
         """Verify that pressing 's' triggers IP selection when focused on an IP field."""

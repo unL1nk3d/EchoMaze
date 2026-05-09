@@ -1317,4 +1317,67 @@ Ahora lanzo el flujo automático – cuando termine, te muestro el resultado con
    4. Actualización de Configuración: Se ajustó UI/ui.py para asegurar que el modelo se pase correctamente al inicializar la escena de túneles.
 
   Ahora puedes navegar a la sección de túneles (tecla 'w' desde el árbol principal), situarte en uno de los campos de IP y presionar 's' para ver y seleccionar tus objetivos rápidamente.
-  
+
+
+  ✦ He actualizado exitosamente el sistema de gestión de túneles (TunnelsManager) siguiendo los principios de Arquitectura Hexagonal y cumpliendo con los nuevos requerimientos de estados.
+
+  Cambios en el "Hexágono" (TunnelsManager):
+
+   1. Modelo de Dominio (tunnelsManager/models/tunnel.py):
+       * Se definieron las constantes para los 5 estados requeridos: active, disconnected, deactivated, activating y filtered connection.
+       * Se implementó una lista de estados permitidos (ALLOWED_STATUSES) para validaciones futuras.
+   2. Puerto de Gestión (tunnelsManager/ports/drivers/forTunnelManagement.py):
+       * Se añadió el método update_tunnel_status a la interfaz del driver, permitiendo que agentes externos (como la UI o scripts de automatización) cambien el estado de un túnel.
+   3. Lógica Central (tunnelsManager/core.py):
+       * Se implementó el método update_tunnel_status con validación de estados permitidos.
+       * Se actualizó el método get_tunnel_stats para proporcionar un desglose detallado de todos los nuevos estados, permitiendo una monitorización precisa del sistema.
+
+  Cambios en la Interfaz y Pruebas:
+
+   * UI (UI/frames/tunnels_frame.py): Se rediseñó la etiqueta de estadísticas en el Dashboard de Túneles para mostrar el conteo de cada uno de los 5 estados, optimizando el espacio visual.
+   * Pruebas Unitarias: Se actualizaron los tests en UI/tests/test_tunnels_frame.py para reflejar el nuevo modelo de datos y asegurar que la interfaz procese correctamente las estadísticas extendidas.
+
+  El sistema ahora soporta un ciclo de vida de túneles mucho más robusto y profesional, alineado con las necesidades de un operador en entornos complejos. Todas las pruebas (7/7) han pasado correctamente.
+
+
+  ✦ He implementado la funcionalidad solicitada para permitir la activación y desactivación manual de los túneles por parte del operador.
+
+  Detalles de la Implementación:
+
+   1. Modelo de Dominio: Se utiliza el estado deactivated para representar una desconexión solicitada explícitamente por el usuario. Este estado es persistente y garantiza que el sistema no intente
+      "re-activar" el túnel durante las comprobaciones automáticas de salud.
+   2. Puerto de Gestión (ForTunnelManagement): Se añadieron los métodos activate_tunnel y deactivate_tunnel para formalizar estas acciones en el "hexágono" del gestor de túneles.
+   3. Lógica del Caso de Uso (TunnelsUseCase):
+       * deactivate_tunnel: Cambia el estado a deactivated.
+       * activate_tunnel: Devuelve el túnel al estado active (sujeto a validación de conexión posterior).
+       * Se aseguró que check_tunnels_health respete la decisión del operador y ignore los túneles en estado deactivated.
+   4. Interfaz de Usuario (TunnelsDashboardFrame):
+       * Se agregaron dos nuevos botones: "Activate" y "Deactivate".
+       * Estos botones actúan sobre el túnel seleccionado en la lista, permitiendo un control directo y rápido.
+   5. Verificación y Calidad:
+       * Se implementaron pruebas unitarias en el core (test/test_tunnels_manager.py) para validar las transiciones de estado.
+       * Se añadieron pruebas de integración en la UI (UI/tests/test_tunnels_frame.py) para asegurar que los botones disparen las acciones correctas.
+
+  Todas las pruebas (13 en total) han pasado exitosamente, confirmando que el operador ahora tiene un control granular sobre el estado deseado de cada conexión, independiente de su salud técnica.
+
+✦ He desarrollado la funcionalidad que permite configurar técnicas de implante (como el beaconing) para gestionar la activación automática de túneles, respetando siempre las decisiones manuales del operador.
+
+  Detalles de la Implementación:
+
+   1. Modelo de Datos Actualizado:
+       * Se añadió el campo technique a la entidad Tunnel.
+       * Se definieron las técnicas permitidas: none y beaconing.
+   2. Lógica de Negocio (TunnelsUseCase):
+       * Procesamiento de Beacons: Se implementó el método process_implant_beacon. Si un túnel está en estado activating y tiene configurada la técnica de beaconing, al recibir un beacon cambiará
+         automáticamente a active.
+       * Respeto a Desactivación: Si el operador ha marcado un túnel como deactivated, cualquier beacon recibido será ignorado, garantizando que el túnel no se levante sin autorización explícita.
+   3. Interfaz de Usuario (TunnelsDashboardFrame):
+       * Selector de Técnica: Se añadió una lista para elegir entre "None" y "Beaconing" para cada túnel.
+       * Botón "Set Tech": Permite guardar la técnica elegida para el túnel seleccionado.
+       * Simulación de Beacon: Se agregó el botón "Send Beacon" para que el operador pueda simular la llegada de una señal del implante y verificar el comportamiento del túnel.
+       * Visualización clara: La lista de túneles ahora muestra la técnica activa entre corchetes (ej. [beaconing]).
+   4. Cobertura de Pruebas:
+       * Se implementó test_implant_beaconing_logic en el core para validar las transiciones de estado.
+       * Se añadió test_technique_and_beacon_buttons en la suite de UI para asegurar la correcta integración de los botones.
+
+  Todas las pruebas (15 en total) han pasado exitosamente. El sistema ahora permite una gestión inteligente de los implantes, equilibrando la automatización con el control manual absoluto del operador.

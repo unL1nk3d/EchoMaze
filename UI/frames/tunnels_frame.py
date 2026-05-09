@@ -3,6 +3,7 @@ from asciimatics.exceptions import NextScene
 from asciimatics.screen import Screen
 from asciimatics.event import KeyboardEvent
 from tunnelsManager.core import TunnelsUseCase
+from tunnelsManager.models.tunnel import Tunnel
 
 class TunnelsDashboardFrame(Frame):
     def __init__(self, screen: Screen, model):
@@ -29,6 +30,13 @@ class TunnelsDashboardFrame(Frame):
         self.local_port_text = Text(label="Local Port:", name="local_port")
         self.dest_ip_text = Text(label="Dest IP (opt):", name="dest_ip")
         self.remote_port_text = Text(label="Remote Port (opt):", name="remote_port")
+        self.check_interval_text = Text(label="Check Interval (s):", name="check_interval")
+        self.technique_list = ListBox(
+            height=3,
+            options=[("None", Tunnel.TECHNIQUE_NONE), ("Beaconing", Tunnel.TECHNIQUE_BEACONING)],
+            label="Technique:",
+            name="technique"
+        )
 
         layout_stats = Layout([100])
         self.add_layout(layout_stats)
@@ -45,11 +53,22 @@ class TunnelsDashboardFrame(Frame):
         layout_form.add_widget(self.dest_ip_text, 1)
         layout_form.add_widget(self.remote_port_text, 1)
 
-        layout_buttons = Layout([1, 1, 1])
+        layout_policy = Layout([50, 50])
+        self.add_layout(layout_policy)
+        layout_policy.add_widget(self.check_interval_text, 0)
+        layout_policy.add_widget(self.technique_list, 1)
+
+        layout_buttons = Layout([1, 1, 1, 1, 1, 1, 1, 1, 1])
         self.add_layout(layout_buttons)
         layout_buttons.add_widget(Button("Add Tunnel", self._add_tunnel), 0)
-        layout_buttons.add_widget(Button("Delete Selected", self._delete_tunnel), 1)
-        layout_buttons.add_widget(Button("Close", self._close), 2)
+        layout_buttons.add_widget(Button("Set Policy", self._set_policy), 1)
+        layout_buttons.add_widget(Button("Set Tech", self._set_technique), 2)
+        layout_buttons.add_widget(Button("Activate", self._activate_tunnel), 3)
+        layout_buttons.add_widget(Button("Activating", self._set_activating), 4)
+        layout_buttons.add_widget(Button("Deactivate", self._deactivate_tunnel), 5)
+        layout_buttons.add_widget(Button("Send Beacon", self._send_beacon), 6)
+        layout_buttons.add_widget(Button("Delete Selected", self._delete_tunnel), 7)
+        layout_buttons.add_widget(Button("Close", self._close), 8)
 
         self.fix()
         self._refresh_data()
@@ -136,17 +155,61 @@ class TunnelsDashboardFrame(Frame):
 
     def _refresh_data(self):
         stats = self.tunnels_usecase.get_tunnel_stats()
-        self.stats_label.text = f"Stats - Total: {stats['total']} | Active: {stats['active']} | Hanging (Warning): {stats['hanging']}"
+        self.stats_label.text = f"Stats - Tot:{stats['total']} | Act:{stats['active']} | Disc:{stats['disconnected']} | Deact:{stats['deactivated']} | Activating:{stats['activating']} | Filt:{stats['filtered']} | Hang:{stats['hanging']}"
+        self.check_interval_text.value = str(self.tunnels_usecase.check_interval)
 
         tunnels = self.tunnels_usecase.get_all_tunnels()
         options = []
         for t in tunnels:
             hanging_str = "[HANGING] " if t.is_hanging else ""
             remote_str = f"-> {t.dest_ip}:{t.remote_port}" if t.dest_ip else ""
-            desc = f"{hanging_str}ID:{t.id} | {t.source_ip}:{t.local_port} {remote_str} ({t.status})"
+            tech_str = f" [{t.technique}]" if t.technique != Tunnel.TECHNIQUE_NONE else ""
+            desc = f"{hanging_str}ID:{t.id} | {t.source_ip}:{t.local_port} {remote_str} ({t.status}){tech_str}"
             options.append((desc, t.id))
 
         self.tunnels_list.options = options
+
+    def _set_policy(self):
+        self.save()
+        val = self.data.get("check_interval")
+        if val and val.isdigit():
+            self.tunnels_usecase.set_connection_check_policy(int(val))
+            self._scene.add_effect(PopUpDialog(self._screen, f"Policy updated: {val}s", ["OK"]))
+            self._refresh_data()
+
+    def _set_technique(self):
+        selected_id = self.tunnels_list.value
+        if selected_id is not None:
+            self.save()
+            tech = self.data.get("technique")
+            self.tunnels_usecase.set_tunnel_technique(selected_id, tech)
+            self._refresh_data()
+
+    def _activate_tunnel(self):
+        selected_id = self.tunnels_list.value
+        if selected_id is not None:
+            self.tunnels_usecase.activate_tunnel(selected_id)
+            self._refresh_data()
+
+    def _set_activating(self):
+        selected_id = self.tunnels_list.value
+        if selected_id is not None:
+            self.tunnels_usecase.set_activating_status(selected_id)
+            self._refresh_data()
+
+    def _deactivate_tunnel(self):
+        selected_id = self.tunnels_list.value
+        if selected_id is not None:
+            self.tunnels_usecase.deactivate_tunnel(selected_id)
+            self._refresh_data()
+
+    def _send_beacon(self):
+        selected_id = self.tunnels_list.value
+        if selected_id is not None:
+            success = self.tunnels_usecase.process_implant_beacon(selected_id)
+            msg = "Beacon received and processed!" if success else "Beacon ignored (Deactivated, Tech None, or invalid ID)"
+            self._scene.add_effect(PopUpDialog(self._screen, msg, ["OK"]))
+            self._refresh_data()
 
     def _add_tunnel(self):
         self.save()
@@ -169,7 +232,13 @@ class TunnelsDashboardFrame(Frame):
             self._refresh_data()
 
     def _on_select(self):
-        pass
+        selected_id = self.tunnels_list.value
+        if selected_id is not None:
+            tunnels = self.tunnels_usecase.get_all_tunnels()
+            for t in tunnels:
+                if t.id == selected_id:
+                    self.technique_list.value = t.technique
+                    break
 
     def _close(self):
         self._scene.remove_effect(self)
