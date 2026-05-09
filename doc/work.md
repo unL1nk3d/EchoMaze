@@ -1288,3 +1288,33 @@ Ahora lanzo el flujo automático – cuando termine, te muestro el resultado con
   He verificado los cambios ejecutando los tests de integración (UI/tests/test_observer_integration.py) y los 40 tests pasaron correctamente.
 
   ¿Hay algo más en lo que pueda ayudarte con la UI o el motor de scoring?
+
+
+
+  ✦ He completado la integración del TunnelsDashboardFrame y el TunnelsUseCase en el sistema. A continuación, detallo los cambios realizados:
+
+   1. Modelo (UI/models.py): Se actualizó la clase GenericModel para incluir el atributo self.tunnels, que almacena la instancia de TunnelsUseCase. Esto permite que cualquier componente con acceso al modelo
+      pueda interactuar con la lógica de túneles.
+   2. Infraestructura (launch.py): Se modificó el proceso de arranque (build_core_stack) para inicializar los adaptadores de túneles (InMemoryTunnelRepository y NetworkConnectionTester) y el caso de uso
+      (TunnelsUseCase), inyectándolo posteriormente en el GenericModel.
+   3. Configuración de la UI (UI/ui.py): Se registró el TunnelsDashboardFrame como una nueva escena denominada "tunnels", pasando el caso de uso desde el modelo.
+   4. Navegación (UI/frames/tree_ip_frame.py): Se añadió un manejador de eventos en TreeIPFrame para que, al presionar la tecla 'w' (o 'W'), el usuario sea redirigido automáticamente al panel de control de
+      túneles.
+
+  Ahora puedes acceder al Dashboard de Túneles desde la vista principal de IPs simplemente presionando la tecla 'w'. El botón "Close" en dicho dashboard te devolverá a la vista principal.
+  \
+
+  ✦ He implementado la funcionalidad solicitada en el frame TunnelsDashboardFrame. Ahora, los usuarios pueden seleccionar rápidamente direcciones IP existentes de la base de datos para los campos de origen y
+  destino.
+
+  Detalles de la Implementación:
+
+   1. Integración del Modelo: Se actualizó TunnelsDashboardFrame para recibir el GenericModel completo, permitiendo el acceso a la lista de IPs en caché (model.cachered_ips).
+   2. Manejador de Teclado: Se implementó el método process_event para detectar la pulsación de la tecla 's' (o 'S'). Esta acción solo se activa si el foco está en los campos "Source IP" o "Dest IP".
+   3. Selector de IP: Al presionar 's', aparece un popup emergente (un nuevo Frame) que muestra una lista única y ordenada de todas las direcciones IP cargadas en el sistema.
+       * Si seleccionas una IP de la lista, el campo correspondiente se rellena automáticamente.
+       * El popup utiliza el mismo tema visual (paleta) que el frame principal para mantener la consistencia estética.
+   4. Actualización de Configuración: Se ajustó UI/ui.py para asegurar que el modelo se pase correctamente al inicializar la escena de túneles.
+
+  Ahora puedes navegar a la sección de túneles (tecla 'w' desde el árbol principal), situarte en uno de los campos de IP y presionar 's' para ver y seleccionar tus objetivos rápidamente.
+  

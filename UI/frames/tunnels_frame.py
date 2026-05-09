@@ -1,10 +1,11 @@
-from asciimatics.widgets import Frame, Layout, ListBox, Button, Label, TextBox, Text
+from asciimatics.widgets import Frame, Layout, ListBox, Button, Label, TextBox, Text, PopUpDialog, Widget
 from asciimatics.exceptions import NextScene
 from asciimatics.screen import Screen
+from asciimatics.event import KeyboardEvent
 from tunnelsManager.core import TunnelsUseCase
 
 class TunnelsDashboardFrame(Frame):
-    def __init__(self, screen: Screen, tunnels_usecase: TunnelsUseCase):
+    def __init__(self, screen: Screen, model):
         super(TunnelsDashboardFrame, self).__init__(
             screen,
             screen.height * 3 // 4,
@@ -13,7 +14,8 @@ class TunnelsDashboardFrame(Frame):
             can_scroll=False,
             reduce_cpu=True
         )
-        self.tunnels_usecase = tunnels_usecase
+        self.model = model
+        self.tunnels_usecase = model.tunnels
 
         self.stats_label = Label("")
         self.tunnels_list = ListBox(
@@ -51,6 +53,86 @@ class TunnelsDashboardFrame(Frame):
 
         self.fix()
         self._refresh_data()
+
+    def process_event(self, event):
+        if isinstance(event, KeyboardEvent):
+            if event.key_code in [ord('S'), ord('s')]:
+                # Check if focused widget is one of the IP or Port fields
+                focused_widget = self.focussed_widget
+                if focused_widget in [self.source_ip_text, self.dest_ip_text]:
+                    self._show_ip_selection(focused_widget)
+                    return None
+                elif focused_widget in [self.local_port_text, self.remote_port_text]:
+                    # Determine which IP field corresponds to this port field
+                    ip_widget = self.source_ip_text if focused_widget == self.local_port_text else self.dest_ip_text
+                    self._show_port_selection(focused_widget, ip_widget.value)
+                    return None
+        return super(TunnelsDashboardFrame, self).process_event(event)
+
+    def _show_ip_selection(self, target_widget):
+        # Use cachered_ips which contains (ip, parent, protocols, level)
+        ips_with_data = self.model.cachered_ips
+        
+        if not ips_with_data:
+            self._scene.add_effect(PopUpDialog(self._screen, "No IPs found in database", ["OK"]))
+            return
+
+        # Sort and format options: "IP [services]"
+        options = []
+        for ip, _, protocols, _ in sorted(ips_with_data, key=lambda x: x[0]):
+            services_str = f" [{', '.join(protocols[:3])}]" if protocols else ""
+            display_text = f"{ip}{services_str}"
+            options.append((display_text, ip))
+        
+        def _on_pick():
+            target_widget.value = list_box.value
+            self._scene.remove_effect(popup)
+
+        layout = Layout([100], fill_frame=True)
+        popup = Frame(self._screen, 10, 40, has_border=True, title="Select IP")
+        popup.palette = self.palette
+        popup.add_layout(layout)
+        list_box = ListBox(Widget.FILL_FRAME, options, on_select=_on_pick)
+        layout.add_widget(list_box)
+        layout.add_widget(Button("Cancel", lambda: self._scene.remove_effect(popup)))
+        popup.fix()
+        self._scene.add_effect(popup)
+
+    def _show_port_selection(self, target_widget, ip):
+        if not ip:
+            self._scene.add_effect(PopUpDialog(self._screen, "Please select/enter an IP first", ["OK"]))
+            return
+
+        # Fetch ports from repository via model
+        repo = self.model.repo.repository
+        all_ports = []
+        if hasattr(repo, 'select_all_ports'):
+            all_ports = repo.select_all_ports()
+        
+        # Filter ports by IP
+        ip_ports = [p for p in all_ports if p.ip == ip]
+        
+        if not ip_ports:
+            self._scene.add_effect(PopUpDialog(self._screen, f"No ports found for {ip}", ["OK"]))
+            return
+
+        options = []
+        for p in sorted(ip_ports, key=lambda x: x.port):
+            options.append((f"{p.port} ({p.service_name})", str(p.port)))
+        
+        def _on_pick():
+            target_widget.value = list_box.value
+            self._scene.remove_effect(popup)
+
+        layout = Layout([100], fill_frame=True)
+        popup = Frame(self._screen, 10, 30, has_border=True, title=f"Ports for {ip}")
+        popup.palette = self.palette
+        popup.add_layout(layout)
+        list_box = ListBox(Widget.FILL_FRAME, options, on_select=_on_pick)
+        layout.add_widget(list_box)
+        layout.add_widget(Button("Cancel", lambda: self._scene.remove_effect(popup)))
+        popup.fix()
+        self._scene.add_effect(popup)
 
     def _refresh_data(self):
         stats = self.tunnels_usecase.get_tunnel_stats()

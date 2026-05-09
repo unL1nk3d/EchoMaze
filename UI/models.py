@@ -201,7 +201,7 @@ class Observable:
 
 
 class GenericModel(Observable, Observer):
-    def __init__(self, repository, commands=None, port_service_map=None, ingestor=None, opsec_hooks=None, scoring_engine=None, session_manager=None):
+    def __init__(self, repository, commands=None, port_service_map=None, ingestor=None, opsec_hooks=None, scoring_engine=None, session_manager=None, tunnels_usecase=None):
         Observable.__init__(self)
         Observer.__init__(self)
         self.repo = RepositoryModel(repository)
@@ -210,6 +210,7 @@ class GenericModel(Observable, Observer):
         self.mapper = UIMapper(port_service_map=port_service_map)
         self.scoring_engine = scoring_engine
         self.session_manager = session_manager
+        self.tunnels = tunnels_usecase
         # Lazy import to avoid circular dependency
         if opsec_hooks is not None:
             self.opsec_hooks = opsec_hooks

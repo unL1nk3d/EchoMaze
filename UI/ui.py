@@ -6,6 +6,7 @@ from UI.frames.ProtocolFrame import ProtocolFrame
 from UI.frames.tree_ip_frame import TreeIPFrame
 from UI.frames.SuggestionsFrame import SuggestionsFrame
 from UI.frames.TerminalFrame import TerminalFrame
+from UI.frames.tunnels_frame import TunnelsDashboardFrame
 from UI.models import UIMapper,GenericModel,RepositoryModel
 from UI.opsec_panel import OpSecPanel
 from asciimatics.scene import Scene
@@ -35,7 +36,8 @@ def demo(screen,model):
         Scene([ProtocolFrame(screen,model)], -1, name="protocols"),  # ip_index se actualiza dinámicamente
         Scene([opsec], -1, name="opsec"),
         Scene([AdminDashboardFrame(screen, model)], -1, name="admin"),
-        Scene([ArtifactsFrame(screen, model)], -1, name="artifacts")
+        Scene([ArtifactsFrame(screen, model)], -1, name="artifacts"),
+        Scene([TunnelsDashboardFrame(screen, model)], -1, name="tunnels")
     ]
     screen.play(scenes, stop_on_resize=True, start_scene=scenes[0])
 

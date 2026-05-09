@@ -36,7 +36,24 @@ def build_core_stack(session_manager=None):
     ingestor_use_case = IngestorUseCase(documents=cli_ingestor,auto=auto)
     # Create ScoringEngine sharing the same CRUD instance as Core
     scoring_engine = ScoringEngine(crud=crud)
-    generic = GenericModel(repository=core, commands=cmd, ingestor=auto, scoring_engine=scoring_engine, session_manager=session_manager)
+
+    # Tunnels infrastructure
+    from tunnelsManager.adapters.drivens.RepositoryImpl import InMemoryTunnelRepository
+    from tunnelsManager.adapters.drivens.ConnectionTestImpl import NetworkConnectionTester
+    from tunnelsManager.core import TunnelsUseCase
+    
+    tunnels_repo = InMemoryTunnelRepository()
+    connection_tester = NetworkConnectionTester()
+    tunnels_usecase = TunnelsUseCase(tunnels_repo, connection_tester)
+
+    generic = GenericModel(
+        repository=core, 
+        commands=cmd, 
+        ingestor=auto, 
+        scoring_engine=scoring_engine, 
+        session_manager=session_manager,
+        tunnels_usecase=tunnels_usecase
+    )
     # Wire GenericModel as observer of ScoringEngine so score_changed events propagate to UI
     scoring_engine.attach(generic)
     return dao, crud, core, cmd, generic, cli_ingestor, auto, repository, scoring_engine
