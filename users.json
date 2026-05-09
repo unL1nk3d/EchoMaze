@@ -1,0 +1,18 @@
+{
+    "admin": {
+        "token": "eyJ1c2VyX2lkIjogImQ2MzllZmRhLTI2NDItNDcyNC04YTM5LWU4MDU1MGZlZjE0MSIsICJyb2xlcyI6IFsiYWRtaW4iXSwgImlzX2FkbWluIjogdHJ1ZSwgInBob3RvIjogbnVsbCwgInJlcXVpcmVzX3Bhc3N3b3JkX2NoYW5nZSI6IGZhbHNlfQ==.ddecdfb9e6a110bafe2ed640daae79c4872db470a59dbb03ebf63a938b653e47",
+        "password": {
+            "salt": "XKDJXITaqxsqBxB8rLmLDA==",
+            "iterations": 100000,
+            "key": "JQngCZdTSD4Q97+LS8WSDEZ9tnaRfRcUXMOr8nLtYQY="
+        }
+    },
+    "alice": {
+        "token": "eyJ1c2VyX2lkIjogIjI1MGNjNTM1LTJmODktNGFlZS05Zjg0LWZjN2I4ZDU2NzlhNiIsICJyb2xlcyI6IFsib3BlcmF0b3IiXSwgImlzX2FkbWluIjogZmFsc2UsICJwaG90byI6IG51bGwsICJyZXF1aXJlc19wYXNzd29yZF9jaGFuZ2UiOiB0cnVlfQ==.3cdabb141759b97e9f783ed589232ef6d4d84488fb0b7cfcba8e0fc4365b8a3c",
+        "password": {
+            "salt": "v9d+vD4NIADYrhbMOhjKVQ==",
+            "iterations": 100000,
+            "key": "Jy7GuP+0e50QHJOBKmObezpvvl+qLj6vz47lQ5Zd2vk="
+        }
+    }
+}

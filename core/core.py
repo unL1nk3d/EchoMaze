@@ -64,6 +64,14 @@ class Core:
         return self.crud.select_all_ips(dao=self.crud.dao)
     def select_all_ports(self):
         return self.crud.select_all_ports(dao=self.crud.dao)
+    def select_all_actions(self):
+        return self.crud.select_all_actions(dao=self.crud.dao)
+    def select_ip_by_field(self, field, value):
+        return self.crud.select_ip_by_field(field, value, dao=self.crud.dao)
+    def insert_artifact(self, artifact):
+        return self.crud.insert_artifact(artifact, dao=self.crud.dao)
+    def select_artifacts_by_node_id(self, node_id):
+        return self.crud.select_artifacts_by_node_id(node_id, dao=self.crud.dao)
     def detect_ip_directories(self,base_dir='scan_results'):
         ip_dirs = []
         if not os.path.exists(base_dir):

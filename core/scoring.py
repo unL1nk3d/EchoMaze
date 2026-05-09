@@ -25,6 +25,13 @@ class ScoringEngine(Observable):
             'enum': 3,
             'idle': 0,
         }
+        self._artifact_scores = {
+            'mimikatz': 50,
+            'nc.exe': 15,
+            'cobaltstrike': 80,
+            'generic_payload': 25,
+            'backdoor': 60,
+        }
         self._profile_mod = profile_modifiers or {
             0: 1.0,
             1: 1.3,
@@ -49,6 +56,31 @@ class ScoringEngine(Observable):
             self.crud.insert_ip(ip, '', '', 0, dao=self.crud.dao)
             node = self._find_ipnode(ip)
         base_score = self._action_scores.get(action_type, 1)
+        mod = self._get_profile_mod(node, profile)
+        score_add = base_score * mod
+        node.score = (getattr(node, "score", 0.0) or 0.0) + score_add
+        self.crud.update_ip(node.id, node, dao=self.crud.dao)
+        self.on_score_changed(ip, node.score)
+        return node.score
+
+    def register_artifact(self, ip, artifact_name, noise_score=None, profile=None):
+        node = self._find_ipnode(ip)
+        if not node:
+            self.crud.insert_ip(ip, '', '', 0, dao=self.crud.dao)
+            node = self._find_ipnode(ip)
+        
+        if noise_score is not None:
+            base_score = noise_score
+        else:
+            # Try to find a default score for common artifacts
+            base_score = 0
+            for key, score in self._artifact_scores.items():
+                if key.lower() in artifact_name.lower():
+                    base_score = score
+                    break
+            if base_score == 0:
+                base_score = self._artifact_scores['generic_payload']
+
         mod = self._get_profile_mod(node, profile)
         score_add = base_score * mod
         node.score = (getattr(node, "score", 0.0) or 0.0) + score_add

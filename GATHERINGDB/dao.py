@@ -29,7 +29,7 @@ class Transaction:
             log.error("Transaction failed, rolling back.", exc_info=(exc_type, exc_value, traceback))
         self.cursor.close()
         if self.is_acquired_connection:
-            self.connection.return_connection(self.connection)
+            self.poolToAsk.return_connection(self.connection)
 
 class GenericDAO:
     conn = SQLiteConnectionPool

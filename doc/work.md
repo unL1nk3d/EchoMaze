@@ -1202,3 +1202,89 @@ Voy a proceder así:
 - Al finalizar, inmediatamente correré la fase verify para validar que todo funcione y, si pasa, procederé directamente al archive.
 - Todos los artefactos y registros irán tanto a Engram como a archivos en openspec (modo hybrid).
 Ahora lanzo el flujo automático – cuando termine, te muestro el resultado consolidado del ciclo apply → verify → archive.
+
+
+###
+✦ He completado la implementación del Admin Dashboard, el cual permite supervisar las acciones de cada operador y su respectivo nivel de OPSEC.
+
+  Mejoras realizadas:
+   1. Nuevo Frame de Dashboard (UI/frames/admin_dashboard.py):
+       * Muestra una lista de todos los operadores detectados en el sistema.
+       * Incluye un resumen detallado por operador: conteo total de acciones, promedio de ruido (noise score) y un estado de OPSEC (Stealthy, Caution, Critical).
+       * Muestra el historial reciente de comandos ejecutados por el operador seleccionado.
+   2. Lógica de Agregación (UI/models.py):
+       * Se implementó el método get_operator_summary en GenericModel para agrupar y calcular estadísticas a partir de la tabla actions.
+   3. Integración en la UI (UI/ui.py y UI/frames/tree_ip_frame.py):
+       * Se registró la escena admin en el loop principal.
+       * Se añadió el acceso directo mediante la tecla 'D' desde la vista principal de árbol.
+       * Se actualizó el texto de ayuda en la cabecera para incluir la nueva funcionalidad.
+
+  Ahora, al presionar 'D' en el explorador de IPs, podrás acceder directamente a la vista de administración para auditar el comportamiento y sigilo de los operadores
+
+
+    Cambios realizados:
+
+   1. Integración con IAM: El GenericModel ahora recibe el SessionManager del sistema de identidad (IAM). Se añadió una propiedad is_admin que verifica dinámicamente si el token de sesión actual posee el rol
+      de "admin" o "administrator".
+   2. Interfaz Adaptativa (TreeIPFrame):
+       * Texto de Ayuda Condicional: La leyenda "D: Dashboard" en la cabecera ahora solo es visible para los administradores. Los operadores normales ven una versión simplificada de la ayuda.
+       * Restricción de Teclado: Se bloqueó el acceso mediante la tecla 'D' para usuarios no autorizados. Si un operador intenta usarla, recibirá un mensaje de "[!] Access Denied" en la barra de estado.
+   3. Seguridad en el Frame (AdminDashboardFrame): Se añadió una validación adicional en el método reset() del dashboard. Si por alguna razón un usuario no administrador lograra navegar hacia esta escena, el
+      sistema lo expulsará automáticamente de vuelta a la vista principal.
+   4. Ajuste en el Arranque (launch.py): Se reestructuró la inicialización en launch.py para asegurar que el sistema de autenticación esté listo antes de construir el modelo de la UI, permitiendo la inyección
+      correcta de la sesión.
+
+  Ahora, el dashboard es una herramienta exclusiva para administradores, manteniendo la privacidad de las métricas de OPSEC y las acciones de otros operadores.
+
+    Mejoras y Funcionalidades:
+
+   1. Gestión de Artefactos:
+       * Modelo de Datos: Se actualizó la clase Artifacts en GATHERINGDB/model.py para incluir el campo noise_score y se corrigió la relación de llave foránea con la tabla ip_node.
+       * Capa CRUD: Se añadieron los métodos insert_artifact y select_artifacts_by_node_id en CRUD_GATHERINGDB para persistir y recuperar archivos asociados a cada IP.
+   2. Impacto en OPSEC (Scoring):
+       * Integración con ScoringEngine: El motor de puntuación ahora reconoce artefactos comunes. Por ejemplo, "droppear" Mimikatz aumenta automáticamente el nivel de ruido del nodo en 50 puntos (ajustados por
+         el perfil de OPSEC del sistema). Otros herramientas como nc.exe o cobaltstrike también tienen puntuaciones base predefinidas.
+   3. Interfaz de Usuario:
+       * Nueva Vista de Artefactos (UI/frames/artifacts_frame.py): Una interfaz sencilla para listar artefactos de la IP seleccionada y registrar nuevos archivos con notas y puntuaciones personalizadas.
+       * Acceso Directo: Se habilitó la tecla 'A' desde la vista principal de árbol para navegar rápidamente al gestor de artefactos.
+   4. Estabilidad de Base de Datos:
+       * Patrón Singleton en Conexiones: Se refactorizó SQLiteConnectionPool para evitar fugas de conexiones y bloqueos de archivos (PermissionError en Windows). Ahora el pool se gestiona de forma centralizada
+         y se cierran correctamente todas las conexiones al finalizar la aplicación o las pruebas.
+       * Corrección de Consultas: Se arregló un error en los modelos donde selectCoincidence no aceptaba parámetros, lo que impedía filtrar artefactos por ID de nodo.
+
+  Verificación:
+  Se ha incluido el archivo de pruebas test/test_artifacts_scoring.py, el cual valida que:
+   * La inserción de un artefacto (ej. mimikatz.exe) incrementa correctamente el noise_score del nodo afectado.
+   * Los artefactos se guardan y recuperan correctamente de la base de datos.
+   * La limpieza de recursos de base de datos funciona sin dejar archivos bloqueados.
+
+  Puedes acceder a esta funcionalidad presionando 'A' sobre cualquier IP en el menú principal.
+
+  ✦ He revisado y refactorizado la implementación del patrón Observer en UI/models.py. Tu intuición era correcta: la implementación anterior era solo un esqueleto y no estaba conectada correctamente para
+  propagar eventos importantes como cambios en el score de ruido (OPSEC).
+
+  Mejoras realizadas:
+
+   1. Relay de Eventos (Hub): He configurado GenericModel (y también GenericTreeModel) como un "repetidor" de eventos. Ahora, cuando el modelo observa un cambio en el ScoringEngine (evento score_changed), lo
+      retransmite automáticamente a sus propios observadores (los Frames de la UI).
+   2. Consistencia de interfaces:
+       * Ambos modelos (GenericModel y GenericTreeModel) ahora heredan explícitamente de Observable y Observer.
+       * Se implementó correctamente Observer.__init__(self) y Observable.__init__(self) para evitar problemas de inicialización de listas de observadores.
+   3. Soporte Completo en GenericTreeModel: Este modelo estaba incompleto. He añadido la propiedad selected_ip (con su notificación), así como los métodos get_opsec_data y _build_pivot_path. Esto garantiza que
+      el TreeIPFrame funcione perfectamente sin importar qué modelo se le pase.
+   4. Limpieza de Placeholders: Eliminé los comentarios y el código incompleto (...) en observer_update, reemplazándolos por una lógica de filtrado y propagación robusta.
+
+  Cómo funciona ahora:
+  Cuando seleccionas una IP en la UI:
+   1. Frame -> llama a model.selected_ip = "1.2.3.4".
+   2. Model -> ejecuta self.notify("selected_ip_changed", ...).
+   3. Todos los Frames suscritos (como el panel lateral o la terminal) reciben el evento y actualizan sus sugerencias automáticamente.
+
+  Si el ScoringEngine detecta una acción ruidosa:
+   1. ScoringEngine -> notify("score_changed").
+   2. Model (como observador) -> recibe el evento en observer_update y hace un self.notify hacia la UI.
+   3. La UI refresca los colores de riesgo (verde/amarillo/rojo) en tiempo real.
+
+  He verificado los cambios ejecutando los tests de integración (UI/tests/test_observer_integration.py) y los 40 tests pasaron correctamente.
+
+  ¿Hay algo más en lo que pueda ayudarte con la UI o el motor de scoring?

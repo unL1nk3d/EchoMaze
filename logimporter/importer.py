@@ -630,7 +630,6 @@ class LogImporter:
         parser_class = LogImporter.PARSERS[format_hint]
         parser = parser_class()
         events, report = parser.parse(content)
-        
         return events, report
     
     @staticmethod

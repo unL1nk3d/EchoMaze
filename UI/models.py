@@ -200,14 +200,16 @@ class Observable:
             observer.observer_update(event_type, payload)
 
 
-class GenericModel(Observable):
-    def __init__(self, repository, commands=None, port_service_map=None, ingestor=None, opsec_hooks=None, scoring_engine=None):
-        super().__init__()
+class GenericModel(Observable, Observer):
+    def __init__(self, repository, commands=None, port_service_map=None, ingestor=None, opsec_hooks=None, scoring_engine=None, session_manager=None):
+        Observable.__init__(self)
+        Observer.__init__(self)
         self.repo = RepositoryModel(repository)
         self.cmd = CommandModel(commands)
         self.ingestor = ingestor
         self.mapper = UIMapper(port_service_map=port_service_map)
         self.scoring_engine = scoring_engine
+        self.session_manager = session_manager
         # Lazy import to avoid circular dependency
         if opsec_hooks is not None:
             self.opsec_hooks = opsec_hooks
@@ -225,6 +227,15 @@ class GenericModel(Observable):
     def selected_ip(self):
         return self._selected_ip
     
+    @property
+    def is_admin(self):
+        """Check if the current logged in user is an administrator."""
+        if not self.session_manager or not self.session_manager.is_authenticated():
+            return False
+        token = self.session_manager.current_token
+        # Check both for 'admin' and 'administrator' role just in case
+        return any(role.lower() in ["admin", "administrator"] for role in token.roles)
+
     @selected_ip.setter
     def selected_ip(self, value):
         if self._selected_ip != value:
@@ -266,6 +277,80 @@ class GenericModel(Observable):
         if hasattr(repo, 'select_all_actions'):
             return repo.select_all_actions()
         return None
+    def observer_update(self, event_type: str, payload: dict):
+        """Observer pattern: called by Observable subjects (e.g. ScoringEngine).
+        Relays the event to our own observers (usually UI Frames).
+        """
+        if event_type in ["score_changed", "profile_changed", "selected_ip_changed"]:
+            self.notify(event_type, payload)
+    def get_operator_summary(self):
+        """
+        Obtener un resumen de acciones por operador.
+        
+        Returns:
+            Dict: {operator_name: {'count': int, 'avg_noise': float, 'actions': list}}
+        """
+        actions = self.get_all_actions() or []
+        summary = defaultdict(lambda: {'count': 0, 'total_noise': 0.0, 'actions': []})
+        
+        for act in actions:
+            op = act.operator or "unknown"
+            summary[op]['count'] += 1
+            summary[op]['total_noise'] += act.noise_score or 0.0
+            summary[op]['actions'].append(act)
+            
+        result = {}
+        for op, data in summary.items():
+            result[op] = {
+                'count': data['count'],
+                'avg_noise': data['total_noise'] / data['count'] if data['count'] > 0 else 0.0,
+                'actions': data['actions']
+            }
+        return result
+
+    def get_artifacts_for_ip(self, ip):
+        """
+        Obtener artefactos asociados a una IP.
+        """
+        nodes = self.repo.repository.select_ip_by_field('ip', ip)
+        if not nodes:
+            return []
+        return self.repo.repository.select_artifacts_by_node_id(nodes[0].id)
+
+    def add_artifact(self, ip, filename, notes="", noise_score=None):
+        """
+        Registrar un nuevo artefacto para una IP y actualizar el score OPSEC.
+        """
+        repo = self.repo.repository
+        nodes = repo.select_ip_by_field('ip', ip)
+        if not nodes:
+            return False
+        
+        node = nodes[0]
+        from GATHERINGDB.model import Artifacts
+        import datetime
+
+        # Create artifact entity
+        artifact = Artifacts(
+            id=0,
+            filename=filename,
+            node_id=node.id,
+            sha1="", sha256="", md5="", size=0,
+            created_at=datetime.datetime.now().isoformat(),
+            notes=notes,
+            noise_score=noise_score if noise_score is not None else 0.0
+        )
+        
+        # Save to DB
+        if hasattr(repo, 'insert_artifact'):
+            success = repo.insert_artifact(artifact)
+            if success:
+                # Update OPSEC score via ScoringEngine
+                if self.scoring_engine:
+                    self.scoring_engine.register_artifact(ip, filename, noise_score)
+                return True
+        return False
+
     @staticmethod
     def Quickshort(req:list[int]):
         fin = []
@@ -315,7 +400,7 @@ class GenericModel(Observable):
                 if result and result.templates:
                     suggestions.extend(result.templates)
             # Si no hay específicos, buscar generales de pivoting
-        return []
+        return [] or suggestions
     def get_generic_suggestions_for_ip(self,ip):
         suggestions = []
         result = self.ingestor.searchCoincidence("pivoting")
@@ -535,20 +620,35 @@ class TreeIPMapper:
             self._value = data
 
 
-class GenericTreeModel:
+class GenericTreeModel(Observable, Observer):
     """
     Modelo genérico para TreeIPFrame que integra repository, commands y mapper.
     Similar a GenericModel pero optimizado para estructura jerárquica.
     """
     
-    def __init__(self, repository=None, commands=None, port_service_map=None):
+    def __init__(self, repository=None, commands=None, port_service_map=None, ingestor=None, opsec_hooks=None, scoring_engine=None):
+        Observable.__init__(self)
+        Observer.__init__(self)
         self.repo = repository
         self.cmd = commands
+        self.ingestor = ingestor
+        self.scoring_engine = scoring_engine
         self.mapper = TreeIPMapper(port_service_map=port_service_map)
         self._cachered = []
+        self._selected_ip = ""
         self.protocols = ["SMB", "FTP", "SSH", "HTTP", "DNS", "RDP", "Telnet", 
                          "SMTP", "POP3", "IMAP", "LDAP", "SNMP", "MySQL", "PostgreSQL"]
         self.current_theme = 'hacker'
+        # Lazy import to avoid circular dependency
+        if opsec_hooks is not None:
+            self.opsec_hooks = opsec_hooks
+        else:
+            try:
+                from hooks.opsec_hooks import OpSecHooks
+                self.opsec_hooks = OpSecHooks()
+            except ImportError:
+                self.opsec_hooks = None
+        
         self.themes = {
             "dark": {
                 "background": (Screen.COLOUR_WHITE, Screen.A_NORMAL, Screen.COLOUR_BLACK),
@@ -580,6 +680,21 @@ class GenericTreeModel:
         }
     
     @property
+    def selected_ip(self):
+        return self._selected_ip
+
+    @selected_ip.setter
+    def selected_ip(self, value):
+        if self._selected_ip != value:
+            self._selected_ip = value
+            self.notify("selected_ip_changed", {"ip": value})
+
+    def observer_update(self, event_type: str, payload: dict):
+        """Observer pattern: relay events from scoring engine to UI."""
+        if event_type in ["score_changed", "profile_changed", "selected_ip_changed"]:
+            self.notify(event_type, payload)
+
+    @property
     def cachered_ips(self):
         """Lazy-load y caché de datos desde repository"""
         if not self._cachered:
@@ -602,8 +717,106 @@ class GenericTreeModel:
         self.mapper.from_crud(crud)
         self._cachered = self.mapper.value
     
-    def get_suggestions_for_ip(self, ip):
+    def _build_pivot_path(self, ip):
+        """Build the pivot path (root → ... → leaf) from cachered_ips hierarchy."""
+        # Build parent lookup: ip_str -> parent_ip_str
+        parent_map = {}
+        known_ips = set()
+        for item in self.cachered_ips:
+            ip_str = item[0]
+            parent_ip = item[1]
+            known_ips.add(ip_str)
+            if parent_ip:
+                parent_map[ip_str] = parent_ip
+
+        if ip not in known_ips:
+            return []
+
+        # Walk up from ip to root
+        path = [ip]
+        current = ip
+        visited = set()
+        while current in parent_map and current not in visited:
+            visited.add(current)
+            parent = parent_map[current]
+            if parent and parent in known_ips:
+                path.append(parent)
+                current = parent
+            else:
+                break
+
+        path.reverse()  # root → ... → leaf
+        return path
+
+    def get_opsec_data(self, ip):
+        """Return current OpSec data for an IP: noise_score, service, pivot_path, 
+        risk_color, aggregate_noise, suggestions, status."""
+        noise_score = 0
+        service = None
+        pivot_path = []
+        status = "ok"
+        aggregate_noise = {'total_noise': 0.0, 'per_ip': {}}
+        suggestions = []
+        try:
+            # Get noise score from ScoringEngine if available
+            if self.scoring_engine is not None:
+                noise_score = self.scoring_engine.get_score(ip)
+
+            # Get service from cachered_ips
+            for item in self.cachered_ips:
+                if item[0] == ip:
+                    services = item[2]
+                    if services:
+                        service = services[0]
+                    break
+
+            # Build pivot path from hierarchy
+            pivot_path = self._build_pivot_path(ip)
+
+            # Get aggregate noise from ScoringEngine if available
+            if self.scoring_engine is not None and pivot_path:
+                aggregate_noise = self.scoring_engine.aggregate_pivot_noise(pivot_path)
+
+            # Build suggestions from opsec_hooks
+            if hasattr(self, 'opsec_hooks') and self.opsec_hooks:
+                try:
+                    noise_advice = self.opsec_hooks.on_noise_score_update(noise_score)
+                    if noise_advice:
+                        suggestions.append(noise_advice)
+                except Exception:
+                    pass
+                try:
+                    if service:
+                        service_tips = self.opsec_hooks.on_service_selected(service)
+                        if service_tips:
+                            suggestions.extend(service_tips)
+                except Exception:
+                    pass
+                try:
+                    if pivot_path:
+                        path_tips = self.opsec_hooks.on_pivot_path_change(pivot_path)
+                        if path_tips:
+                            suggestions.extend(path_tips)
+                except Exception:
+                    pass
+
+        except Exception:
+            status = "error"
+
+        return {
+            "noise_score": noise_score,
+            "service": service,
+            "pivot_path": pivot_path,
+            "risk_color": risk_color_for_score(noise_score),
+            "aggregate_noise": aggregate_noise,
+            "suggestions": suggestions,
+            "status": status,
+        }
+
+    def get_generic_suggestions_for_ip(self, ip):
+        suggestions = []
         if self.ingestor:
-            # Buscar templates relacionados con pivoting para la IP
             result = self.ingestor.searchCoincidence("pivoting")
-        return result
+            if result and hasattr(result, 'templates'):
+                suggestions.extend(result.templates)
+        return suggestions
