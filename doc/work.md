@@ -1259,3 +1259,32 @@ Ahora lanzo el flujo automático – cuando termine, te muestro el resultado con
    * La limpieza de recursos de base de datos funciona sin dejar archivos bloqueados.
 
   Puedes acceder a esta funcionalidad presionando 'A' sobre cualquier IP en el menú principal.
+
+  ✦ He revisado y refactorizado la implementación del patrón Observer en UI/models.py. Tu intuición era correcta: la implementación anterior era solo un esqueleto y no estaba conectada correctamente para
+  propagar eventos importantes como cambios en el score de ruido (OPSEC).
+
+  Mejoras realizadas:
+
+   1. Relay de Eventos (Hub): He configurado GenericModel (y también GenericTreeModel) como un "repetidor" de eventos. Ahora, cuando el modelo observa un cambio en el ScoringEngine (evento score_changed), lo
+      retransmite automáticamente a sus propios observadores (los Frames de la UI).
+   2. Consistencia de interfaces:
+       * Ambos modelos (GenericModel y GenericTreeModel) ahora heredan explícitamente de Observable y Observer.
+       * Se implementó correctamente Observer.__init__(self) y Observable.__init__(self) para evitar problemas de inicialización de listas de observadores.
+   3. Soporte Completo en GenericTreeModel: Este modelo estaba incompleto. He añadido la propiedad selected_ip (con su notificación), así como los métodos get_opsec_data y _build_pivot_path. Esto garantiza que
+      el TreeIPFrame funcione perfectamente sin importar qué modelo se le pase.
+   4. Limpieza de Placeholders: Eliminé los comentarios y el código incompleto (...) en observer_update, reemplazándolos por una lógica de filtrado y propagación robusta.
+
+  Cómo funciona ahora:
+  Cuando seleccionas una IP en la UI:
+   1. Frame -> llama a model.selected_ip = "1.2.3.4".
+   2. Model -> ejecuta self.notify("selected_ip_changed", ...).
+   3. Todos los Frames suscritos (como el panel lateral o la terminal) reciben el evento y actualizan sus sugerencias automáticamente.
+
+  Si el ScoringEngine detecta una acción ruidosa:
+   1. ScoringEngine -> notify("score_changed").
+   2. Model (como observador) -> recibe el evento en observer_update y hace un self.notify hacia la UI.
+   3. La UI refresca los colores de riesgo (verde/amarillo/rojo) en tiempo real.
+
+  He verificado los cambios ejecutando los tests de integración (UI/tests/test_observer_integration.py) y los 40 tests pasaron correctamente.
+
+  ¿Hay algo más en lo que pueda ayudarte con la UI o el motor de scoring?
