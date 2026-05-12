@@ -12,15 +12,16 @@ class TunnelsDashboardFrame(Frame):
             screen.height * 3 // 4,
             screen.width * 3 // 4,
             title="Tunnels Dashboard",
-            can_scroll=False,
+            can_scroll=True,
             reduce_cpu=True
         )
         self.model = model
         self.tunnels_usecase = model.tunnels
+        self._options_visible = False
 
         self.stats_label = Label("")
         self.tunnels_list = ListBox(
-            height=10,
+            height=8,
             options=[],
             name="tunnels_list",
             on_select=self._on_select
@@ -44,6 +45,13 @@ class TunnelsDashboardFrame(Frame):
             name="tunnel_type"
         )
 
+        self._rebuild_layout()
+        self._refresh_data()
+
+    def _rebuild_layout(self):
+        # Clear existing layouts
+        self._layouts = []
+
         layout_stats = Layout([100])
         self.add_layout(layout_stats)
         layout_stats.add_widget(self.stats_label)
@@ -59,32 +67,47 @@ class TunnelsDashboardFrame(Frame):
         layout_form.add_widget(self.dest_ip_text, 1)
         layout_form.add_widget(self.remote_port_text, 1)
 
-        layout_policy = Layout([33, 33, 33])
-        self.add_layout(layout_policy)
-        layout_policy.add_widget(self.check_interval_text, 0)
-        layout_policy.add_widget(self.technique_list, 1)
-        layout_policy.add_widget(self.type_list, 2)
+        if self._options_visible:
+            layout_options_title = Layout([100])
+            self.add_layout(layout_options_title)
+            layout_options_title.add_widget(Label("--- ADVANCED OPTIONS (O to hide) ---"))
 
-        layout_buttons = Layout([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+            layout_policy = Layout([33, 33, 33])
+            self.add_layout(layout_policy)
+            layout_policy.add_widget(self.check_interval_text, 0)
+            layout_policy.add_widget(self.technique_list, 1)
+            layout_policy.add_widget(self.type_list, 2)
+
+            layout_adv_buttons = Layout([1, 1, 1, 1, 1, 1])
+            self.add_layout(layout_adv_buttons)
+            layout_adv_buttons.add_widget(Button("Set Policy", self._set_policy), 0)
+            layout_adv_buttons.add_widget(Button("Set Tech", self._set_technique), 1)
+            layout_adv_buttons.add_widget(Button("Eval Ent", self._evaluate_entropy), 2)
+            layout_adv_buttons.add_widget(Button("Sim Transf", self._simulate_transfer), 3)
+            layout_adv_buttons.add_widget(Button("Activating", self._set_activating), 4)
+            layout_adv_buttons.add_widget(Button("Send Beacon", self._send_beacon), 5)
+
+        layout_buttons = Layout([1, 1, 1, 1, 1, 1, 1])
         self.add_layout(layout_buttons)
         layout_buttons.add_widget(Button("Add Tunnel", self._add_tunnel), 0)
         layout_buttons.add_widget(Button("Next Phase", self._advance_phase), 1)
-        layout_buttons.add_widget(Button("Eval Ent", self._evaluate_entropy), 2)
-        layout_buttons.add_widget(Button("Sim Transf", self._simulate_transfer), 3)
-        layout_buttons.add_widget(Button("Set Policy", self._set_policy), 4)
-        layout_buttons.add_widget(Button("Set Tech", self._set_technique), 5)
-        layout_buttons.add_widget(Button("Activate", self._activate_tunnel), 6)
-        layout_buttons.add_widget(Button("Activating", self._set_activating), 7)
-        layout_buttons.add_widget(Button("Deactivate", self._deactivate_tunnel), 8)
-        layout_buttons.add_widget(Button("Send Beacon", self._send_beacon), 9)
-        layout_buttons.add_widget(Button("Delete Selected", self._delete_tunnel), 10)
-        layout_buttons.add_widget(Button("Close", self._close), 11)
+        layout_buttons.add_widget(Button("Activate", self._activate_tunnel), 2)
+        layout_buttons.add_widget(Button("Deactivate", self._deactivate_tunnel), 3)
+        layout_buttons.add_widget(Button("Delete", self._delete_tunnel), 4)
+        layout_buttons.add_widget(Button("Options (O)", self._toggle_options), 5)
+        layout_buttons.add_widget(Button("Close", self._close), 6)
 
         self.fix()
-        self._refresh_data()
+
+    def _toggle_options(self):
+        self._options_visible = not self._options_visible
+        self._rebuild_layout()
 
     def process_event(self, event):
         if isinstance(event, KeyboardEvent):
+            if event.key_code in [ord('O'), ord('o')]:
+                self._toggle_options()
+                return None
             if event.key_code in [ord('S'), ord('s')]:
                 # Check if focused widget is one of the IP or Port fields
                 focused_widget = self.focussed_widget

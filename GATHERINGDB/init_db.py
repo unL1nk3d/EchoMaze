@@ -1,6 +1,6 @@
 from GATHERINGDB.dao import GenericDAO,Transaction#,log
 from GATHERINGDB.model import (IPNode,Ports,Templates,WorkflowScoreConfig,
-PivotHistory,Actions,Mitre_attack,Artifacts,Opsec_logs)
+PivotHistory,Actions,Mitre_attack,Artifacts,Opsec_logs, TunnelDB)
 import sqlite3
 import os
 class DatabaseInitializer:
@@ -10,7 +10,7 @@ class DatabaseInitializer:
         # crear la tabla si no existe
         models = [
             IPNode,Ports,Templates,WorkflowScoreConfig,
-            PivotHistory,Actions,Mitre_attack,Artifacts,Opsec_logs
+            PivotHistory,Actions,Mitre_attack,Artifacts,Opsec_logs, TunnelDB
         ]
         with dao.conn() as connection:
             with Transaction(connection,dao.conn) as cursor:

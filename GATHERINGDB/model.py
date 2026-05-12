@@ -453,6 +453,87 @@ class Opsec_logs(BaseEntity):
 
 
 
+@dataclass
+class TunnelDB(BaseEntity):
+    """
+    Represents a network tunnel persisted in the database.
+    """
+    id: int
+    source_ip: str
+    dest_ip: str
+    local_port: int
+    remote_port: int
+    status: str
+    technique: str
+    phase: str
+    tunnel_type: str
+    data_sent_bytes: int
+    data_received_bytes: int
+    last_activity: str
+    entropy_score: float
+    entropy_warning: str
+
+    @classmethod
+    def get_guid(cls):
+        return "id"
+
+    def exportAsTupple(self):
+        return (self.source_ip, self.dest_ip, self.local_port, self.remote_port,
+                self.status, self.technique, self.phase, self.tunnel_type,
+                self.data_sent_bytes, self.data_received_bytes, self.last_activity,
+                self.entropy_score, self.entropy_warning)
+
+    @classmethod
+    def insert(cls):
+        return """INSERT INTO tunnels 
+            (source_ip, dest_ip, local_port, remote_port, status, technique, phase, 
+             tunnel_type, data_sent_bytes, data_received_bytes, last_activity, 
+             entropy_score, entropy_warning) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+
+    @classmethod
+    def update(cls):
+        return """UPDATE tunnels SET 
+            source_ip=?, dest_ip=?, local_port=?, remote_port=?, status=?, 
+            technique=?, phase=?, tunnel_type=?, data_sent_bytes=?, 
+            data_received_bytes=?, last_activity=?, entropy_score=?, 
+            entropy_warning=? WHERE id=?"""
+
+    @classmethod
+    def delete(cls):
+        return "DELETE FROM tunnels WHERE id=?"
+
+    @classmethod
+    def select(cls):
+        return "SELECT * FROM tunnels;"
+
+    @classmethod
+    def selectById(cls):
+        return "SELECT * FROM tunnels WHERE id = ?;"
+
+    @classmethod
+    def selectCoincidence(cls, field):
+        return f"SELECT * FROM tunnels WHERE {field} = ?;"
+
+    @classmethod
+    def create_table(cls):
+        return """CREATE TABLE IF NOT EXISTS tunnels (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_ip TEXT NOT NULL,
+            dest_ip TEXT,
+            local_port INTEGER,
+            remote_port INTEGER,
+            status TEXT,
+            technique TEXT,
+            phase TEXT,
+            tunnel_type TEXT,
+            data_sent_bytes INTEGER DEFAULT 0,
+            data_received_bytes INTEGER DEFAULT 0,
+            last_activity TEXT,
+            entropy_score REAL DEFAULT 0.0,
+            entropy_warning TEXT
+        );"""
+
 class Templates(BaseEntity):
     def __init__(self, technique, name, desc, linux, windows, noise_estimate):
         self.technique = technique

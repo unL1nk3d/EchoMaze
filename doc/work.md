@@ -1479,3 +1479,75 @@ que haya una API expuesta que pueda consumir para consultar todas las funciones 
    * Se creó y ejecutó exitosamente la suite de pruebas test/test_tunnel_phases.py, la cual verifica tanto el flujo feliz de las 4 fases como la prevención de saltos de fase ilegales.
    * Se verificó que los cambios no introdujeran regresiones en las funcionalidades existentes de gestión y estadísticas de túneles.
 
+✦ Se ha completado con éxito la integración del módulo tunnelsManager con GATHERINGDB, proporcionando una persistencia robusta de los túneles en la base de datos central del sistema.
+
+  Detalles de la Implementación Técnica:
+
+   1. Esquema de Base de Datos (GATHERINGDB/model.py):
+       * Se definió la entidad TunnelDB heredando de BaseEntity.
+       * La tabla tunnels incluye todos los campos necesarios para el ciclo de vida de 4 fases, métricas de datos, tipos de túnel y resultados de auditoría de entropía.
+
+   2. Inicialización (GATHERINGDB/init_db.py):
+       * Se actualizó el proceso de inicialización para incluir automáticamente la creación de la tabla de túneles al arrancar la aplicación o inicializar la BD.
+
+   3. Repositorio Persistente (tunnelsManager/adapters/drivens/RepositoryImpl.py):
+       * Se implementó DatabaseTunnelRepository, un adaptador que utiliza el GenericDAO de GATHERINGDB.
+       * Este repositorio maneja la conversión entre el modelo de dominio Tunnel y la entidad de base de datos TunnelDB, garantizando que la lógica de negocio permanezca desacoplada del motor de
+         almacenamiento.
+
+   4. Inyección de Dependencias (launch.py):
+       * Se modificó el build_core_stack para reemplazar el repositorio en memoria por el nuevo repositorio de base de datos, inyectando el dao global del sistema.
+
+   5. Garantía de Calidad:
+       * Se desarrolló y validó la suite de pruebas test/test_tunnel_db_integration.py, confirmando que los túneles se guardan, recuperan y eliminan correctamente de la base de datos persistente.
+
+  Con esta mejora, toda la infraestructura de túneles (fases, tipos, métricas y entropía) ahora sobrevive a los reinicios de la aplicación, permitiendo a los operadores y auditores mantener un registro
+  histórico completo de sus operaciones de pivoting.
+✦ Se ha completado con éxito la integración del módulo tunnelsManager con GATHERINGDB, proporcionando una persistencia robusta de los túneles en la base de datos central del sistema.
+
+  Detalles de la Implementación Técnica:
+
+   1. Esquema de Base de Datos (GATHERINGDB/model.py):
+       * Se definió la entidad TunnelDB heredando de BaseEntity.
+       * La tabla tunnels incluye todos los campos necesarios para el ciclo de vida de 4 fases, métricas de datos, tipos de túnel y resultados de auditoría de entropía.
+
+   2. Inicialización (GATHERINGDB/init_db.py):
+       * Se actualizó el proceso de inicialización para incluir automáticamente la creación de la tabla de túneles al arrancar la aplicación o inicializar la BD.
+
+   3. Repositorio Persistente (tunnelsManager/adapters/drivens/RepositoryImpl.py):
+       * Se implementó DatabaseTunnelRepository, un adaptador que utiliza el GenericDAO de GATHERINGDB.
+       * Este repositorio maneja la conversión entre el modelo de dominio Tunnel y la entidad de base de datos TunnelDB, garantizando que la lógica de negocio permanezca desacoplada del motor de
+         almacenamiento.
+
+   4. Inyección de Dependencias (launch.py):
+       * Se modificó el build_core_stack para reemplazar el repositorio en memoria por el nuevo repositorio de base de datos, inyectando el dao global del sistema.
+
+   5. Garantía de Calidad:
+       * Se desarrolló y validó la suite de pruebas test/test_tunnel_db_integration.py, confirmando que los túneles se guardan, recuperan y eliminan correctamente de la base de datos persistente.
+
+  Con esta mejora, toda la infraestructura de túneles (fases, tipos, métricas y entropía) ahora sobrevive a los reinicios de la aplicación, permitiendo a los operadores y auditores mantener un registro
+  histórico completo de sus operaciones de pivoting.
+✦ Se ha completado la implementación de la historia de usuario para mejorar la visualización y gestión de botones en el dashboard de túneles mediante un panel de opciones dinámico.
+
+  Mejoras en la Interfaz de Usuario (UI/frames/tunnels_frame.py):
+
+   1. Panel de Opciones con Tecla 'O':
+       * Se implementó la capacidad de alternar entre una vista "Simple" y una vista "Avanzada" utilizando la tecla 'o' (u 'O') o el nuevo botón "Options (O)".
+       * Este panel agrupa las configuraciones menos frecuentes y herramientas de auditoría para mantener limpia la interfaz principal.
+
+   2. Organización de Botones "Divisables":
+       * Se redujo el número de botones en la vista principal de 12 a 7 esenciales: Add Tunnel, Next Phase, Activate, Deactivate, Delete, Options, Close.
+       * Al activar las opciones avanzadas con 'o', aparece un panel adicional con los botones de auditoría y configuración técnica: Set Policy, Set Tech, Eval Ent, Sim Transf, Activating, Send Beacon.
+       * Esta separación lógica permite que los botones sean más grandes y legibles ("divisables"), evitando que se amontonen o se pierdan en pantallas con resolución limitada.
+
+   3. Optimización de Espacio:
+       * La lista de túneles ahora tiene una altura dinámica y el frame permite el desplazamiento (can_scroll=True) si el panel de opciones está expandido, garantizando que todos los elementos sean siempre
+         accesibles.
+
+   4. Validación Técnica:
+       * Se actualizó la suite de pruebas UI/tests/test_tunnels_frame.py para validar el comportamiento del toggle y asegurar que los campos avanzados se guarden correctamente solo cuando el panel es visible,
+         manteniendo la integridad de los datos.
+       * Todas las pruebas (10/10) pasaron exitosamente.
+
+  Ahora el operador tiene una herramienta mucho más ergonómica y profesional, donde la complejidad técnica está a solo una pulsación de tecla ('o') sin sacrificar la claridad de las operaciones básicas.
+

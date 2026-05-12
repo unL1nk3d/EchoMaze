@@ -38,11 +38,11 @@ def build_core_stack(session_manager=None):
     scoring_engine = ScoringEngine(crud=crud)
 
     # Tunnels infrastructure
-    from tunnelsManager.adapters.drivens.RepositoryImpl import InMemoryTunnelRepository
+    from tunnelsManager.adapters.drivens.RepositoryImpl import DatabaseTunnelRepository
     from tunnelsManager.adapters.drivens.ConnectionTestImpl import NetworkConnectionTester
     from tunnelsManager.core import TunnelsUseCase
     
-    tunnels_repo = InMemoryTunnelRepository()
+    tunnels_repo = DatabaseTunnelRepository(dao)
     connection_tester = NetworkConnectionTester()
     tunnels_usecase = TunnelsUseCase(tunnels_repo, connection_tester)
 
