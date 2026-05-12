@@ -38,13 +38,16 @@ def build_core_stack(session_manager=None):
     scoring_engine = ScoringEngine(crud=crud)
 
     # Tunnels infrastructure
-    from tunnelsManager.adapters.drivens.RepositoryImpl import DatabaseTunnelRepository
+    from tunnelsManager.adapters.drivens.RepositoryImpl import DatabaseTunnelRepository, DatabaseImplantRepository
     from tunnelsManager.adapters.drivens.ConnectionTestImpl import NetworkConnectionTester
     from tunnelsManager.core import TunnelsUseCase
+    from tunnelsManager.implants_core import ImplantsUseCase
     
     tunnels_repo = DatabaseTunnelRepository(dao)
+    implants_repo = DatabaseImplantRepository(dao)
     connection_tester = NetworkConnectionTester()
     tunnels_usecase = TunnelsUseCase(tunnels_repo, connection_tester)
+    implants_usecase = ImplantsUseCase(implants_repo)
 
     generic = GenericModel(
         repository=core, 
@@ -52,7 +55,8 @@ def build_core_stack(session_manager=None):
         ingestor=auto, 
         scoring_engine=scoring_engine, 
         session_manager=session_manager,
-        tunnels_usecase=tunnels_usecase
+        tunnels_usecase=tunnels_usecase,
+        implants_usecase=implants_usecase
     )
     # Wire GenericModel as observer of ScoringEngine so score_changed events propagate to UI
     scoring_engine.attach(generic)

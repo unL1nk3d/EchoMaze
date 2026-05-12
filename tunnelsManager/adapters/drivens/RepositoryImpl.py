@@ -29,12 +29,12 @@ class InMemoryTunnelRepository(ForTunnelRepository):
         return False
 
 from GATHERINGDB.dao import GenericDAO
-from GATHERINGDB.model import TunnelDB
+from GATHERINGDB.model import TunnelDB, ImplantDB
+from tunnelsManager.ports.drivens.forImplantRepository import ForImplantRepository
+from tunnelsManager.models.implant import Implant
 
 class DatabaseTunnelRepository(ForTunnelRepository):
-    """
-    Persistent implementation of the tunnel repository using GATHERINGDB (SQLite).
-    """
+    # ... (existing DatabaseTunnelRepository code)
     def __init__(self, dao: GenericDAO):
         self.dao = dao
 
@@ -78,15 +78,7 @@ class DatabaseTunnelRepository(ForTunnelRepository):
     def save_tunnel(self, tunnel: Tunnel) -> Tunnel:
         db_tunnel = self._to_db(tunnel)
         if tunnel.id is None:
-            # We don't have a direct way to get the inserted ID from GenericDAO.insertar currently 
-            # as it returns rowcount. But GenericDAO is using autoincrement.
-            # Usually we want the last_insert_rowid. 
-            # Looking at GenericDAO.insertar, it returns cursor.rowcount.
-            # This is a limitation in the current GATHERINGDB abstraction.
-            # For now, let's assume we can query it back or that GenericDAO can be extended.
-            # Actually, GenericDAO.insertar returns cursor.rowcount which is 1.
             self.dao.insertar(db_tunnel)
-            # Find the last inserted tunnel to get the ID
             all_tunnels = self.dao.seleccionar(TunnelDB)
             if all_tunnels:
                 last_tunnel = max(all_tunnels, key=lambda x: x.id)
@@ -106,3 +98,56 @@ class DatabaseTunnelRepository(ForTunnelRepository):
     def delete_tunnel(self, tunnel_id: int) -> bool:
         count = self.dao.eliminar(TunnelDB, tunnel_id)
         return count > 0
+
+class DatabaseImplantRepository(ForImplantRepository):
+    """
+    Persistent implementation of the implant repository using GATHERINGDB.
+    """
+    def __init__(self, dao: GenericDAO):
+        self.dao = dao
+
+    def _to_domain(self, db_implant: ImplantDB) -> Implant:
+        if not db_implant: return None
+        return Implant(
+            id=db_implant.id,
+            name=db_implant.name,
+            implant_type=db_implant.implant_type,
+            payload=db_implant.payload,
+            description=db_implant.description,
+            created_at=db_implant.created_at
+        )
+
+    def _to_db(self, implant: Implant) -> ImplantDB:
+        return ImplantDB(
+            id=implant.id,
+            name=implant.name,
+            implant_type=implant.implant_type,
+            payload=implant.payload,
+            description=implant.description,
+            created_at=implant.created_at
+        )
+
+    def save_implant(self, implant: Implant) -> Implant:
+        db_implant = self._to_db(implant)
+        if implant.id is None:
+            self.dao.insertar(db_implant)
+            all_implants = self.dao.seleccionar(ImplantDB)
+            if all_implants:
+                last_implant = max(all_implants, key=lambda x: x.id)
+                implant.id = last_implant.id
+        else:
+            self.dao.actualizar(db_implant, implant.id)
+        return implant
+
+    def list_implants(self) -> List[Implant]:
+        db_implants = self.dao.seleccionar(ImplantDB)
+        return [self._to_domain(i) for i in db_implants]
+
+    def get_implant(self, implant_id: int) -> Implant:
+        db_implant = self.dao.seleccionarPorId(ImplantDB, implant_id)
+        return self._to_domain(db_implant)
+
+    def delete_implant(self, implant_id: int) -> bool:
+        count = self.dao.eliminar(ImplantDB, implant_id)
+        return count > 0
+

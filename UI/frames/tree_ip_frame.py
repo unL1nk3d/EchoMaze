@@ -501,7 +501,9 @@ class TreeIPFrame(Frame, Observer):
             elif event.key_code in [ord('A'), ord('a')]:
                 raise NextScene("artifacts")
             elif event.key_code in [ord('W'), ord('w')]:
-                raise NextScene("tunnels")
+               raise NextScene("tunnels")
+            elif event.key_code in [ord('P'), ord('p')]:
+               raise NextScene("implants")
             elif event.key_code == ord('j'):
                 self._show_suggestions()
                 return None

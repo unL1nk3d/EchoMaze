@@ -534,6 +534,64 @@ class TunnelDB(BaseEntity):
             entropy_warning TEXT
         );"""
 
+@dataclass
+class ImplantDB(BaseEntity):
+    """
+    Represents an implant payload persisted in the database.
+    """
+    id: int
+    name: str
+    implant_type: str
+    payload: str
+    description: str
+    created_at: str
+
+    @classmethod
+    def get_guid(cls):
+        return "id"
+
+    def exportAsTupple(self):
+        return (self.name, self.implant_type, self.payload, self.description, self.created_at)
+
+    @classmethod
+    def insert(cls):
+        return """INSERT INTO implants 
+            (name, implant_type, payload, description, created_at) 
+            VALUES (?, ?, ?, ?, ?)"""
+
+    @classmethod
+    def update(cls):
+        return """UPDATE implants SET 
+            name=?, implant_type=?, payload=?, description=?, created_at=? 
+            WHERE id=?"""
+
+    @classmethod
+    def delete(cls):
+        return "DELETE FROM implants WHERE id=?"
+
+    @classmethod
+    def select(cls):
+        return "SELECT * FROM implants;"
+
+    @classmethod
+    def selectById(cls):
+        return "SELECT * FROM implants WHERE id = ?;"
+
+    @classmethod
+    def selectCoincidence(cls, field):
+        return f"SELECT * FROM implants WHERE {field} = ?;"
+
+    @classmethod
+    def create_table(cls):
+        return """CREATE TABLE IF NOT EXISTS implants (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            implant_type TEXT,
+            payload TEXT,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT (datetime('now'))
+        );"""
+
 class Templates(BaseEntity):
     def __init__(self, technique, name, desc, linux, windows, noise_estimate):
         self.technique = technique
