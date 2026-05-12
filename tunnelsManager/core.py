@@ -1,10 +1,12 @@
 from typing import List, Dict
+from datetime import datetime
 from tunnelsManager.models.tunnel import Tunnel
 from tunnelsManager.ports.drivers.forTunnelCreation import ForTunnelCreation
 from tunnelsManager.ports.drivers.forTunnelManagement import ForTunnelManagement
 from tunnelsManager.ports.drivers.forTunnelStadistics import ForTunnelStadistics
 from tunnelsManager.ports.drivens.forConnectionTest import ForConnectionTest
 from tunnelsManager.ports.drivens.forTunnelRepository import ForTunnelRepository
+import core.entropy as entropy
 
 class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics):
     def __init__(self, repository: ForTunnelRepository, connection_tester: ForConnectionTest):
@@ -12,7 +14,7 @@ class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics
         self.connection_tester = connection_tester
         self.check_interval = 60 # Default interval in seconds
 
-    def create_tunnel(self, source_ip: str, local_port: int, dest_ip: str = None, remote_port: int = None) -> Tunnel:
+    def create_tunnel(self, source_ip: str, local_port: int, dest_ip: str = None, remote_port: int = None, tunnel_type: str = Tunnel.TYPE_HTTP) -> Tunnel:
         # Check if local port is actually open/available, but we save it anyway for tracking
         is_open = self.connection_tester.test_local_port_open(local_port)
         status = Tunnel.STATUS_ACTIVE if is_open else Tunnel.STATUS_DISCONNECTED
@@ -23,9 +25,52 @@ class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics
             dest_ip=dest_ip,
             local_port=local_port,
             remote_port=remote_port,
-            status=status
+            status=status,
+            phase=Tunnel.PHASE_CREATION,
+            tunnel_type=tunnel_type,
+            data_sent_bytes=0,
+            data_received_bytes=0,
+            last_activity=None,
+            entropy_score=0.0,
+            entropy_warning="Pending evaluation"
         )
         return self.repository.save_tunnel(tunnel)
+
+    def advance_tunnel_phase(self, tunnel_id: int) -> Tunnel:
+        tunnel = self.repository.get_tunnel(tunnel_id)
+        if not tunnel:
+            return None
+
+        if tunnel.phase == Tunnel.PHASE_CREATION:
+            return self.setup_tunnel(tunnel_id)
+        elif tunnel.phase == Tunnel.PHASE_SETTING_UP:
+            return self.register_interface(tunnel_id)
+        elif tunnel.phase == Tunnel.PHASE_INTERFACE_REGISTRATION:
+            return self.set_ready(tunnel_id)
+
+        return tunnel
+
+    def setup_tunnel(self, tunnel_id: int) -> Tunnel:
+        tunnel = self.repository.get_tunnel(tunnel_id)
+        if tunnel and tunnel.phase == Tunnel.PHASE_CREATION:
+            tunnel.phase = Tunnel.PHASE_SETTING_UP
+            return self.repository.save_tunnel(tunnel)
+        return tunnel
+
+    def register_interface(self, tunnel_id: int) -> Tunnel:
+        tunnel = self.repository.get_tunnel(tunnel_id)
+        if tunnel and tunnel.phase == Tunnel.PHASE_SETTING_UP:
+            tunnel.phase = Tunnel.PHASE_INTERFACE_REGISTRATION
+            return self.repository.save_tunnel(tunnel)
+        return tunnel
+
+    def set_ready(self, tunnel_id: int) -> Tunnel:
+        tunnel = self.repository.get_tunnel(tunnel_id)
+        if tunnel and tunnel.phase == Tunnel.PHASE_INTERFACE_REGISTRATION:
+            tunnel.phase = Tunnel.PHASE_READY_TO_SEND
+            tunnel.status = Tunnel.STATUS_ACTIVE
+            return self.repository.save_tunnel(tunnel)
+        return tunnel
 
     def get_all_tunnels(self) -> List[Tunnel]:
         return self.repository.list_tunnels()
@@ -48,9 +93,19 @@ class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics
                 return True
         return False
 
-    def get_tunnel_stats(self) -> Dict[str, int]:
+    def get_tunnel_stats(self) -> Dict[str, any]:
         all_tunnels = self.get_all_tunnels()
         
+        # Auditor request: Use calcular_entropia on tunnel distribution
+        tunnel_types_history = [t.tunnel_type for t in all_tunnels]
+        # We need objects with 'comando' attribute or similar for calcular_entropia
+        class DummyEvent:
+            def __init__(self, t): self.comando = t
+        
+        history_objs = [DummyEvent(tt) for tt in tunnel_types_history]
+        global_entropy = entropy.calcular_entropia(history_objs)
+        entropy_warning = entropy.get_entropy_warning(global_entropy)
+
         stats = {
             "total": len(all_tunnels),
             "hanging": len([t for t in all_tunnels if t.is_hanging]),
@@ -58,10 +113,66 @@ class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics
             "disconnected": len([t for t in all_tunnels if t.status == Tunnel.STATUS_DISCONNECTED]),
             "deactivated": len([t for t in all_tunnels if t.status == Tunnel.STATUS_DEACTIVATED]),
             "activating": len([t for t in all_tunnels if t.status == Tunnel.STATUS_ACTIVATING]),
-            "filtered": len([t for t in all_tunnels if t.status == Tunnel.STATUS_FILTERED])
+            "filtered": len([t for t in all_tunnels if t.status == Tunnel.STATUS_FILTERED]),
+            "global_entropy": global_entropy,
+            "entropy_warning": entropy_warning
         }
 
         return stats
+
+    def register_data_transfer(self, tunnel_id: int, sent_bytes: int, received_bytes: int) -> bool:
+        tunnel = self.repository.get_tunnel(tunnel_id)
+        if not tunnel:
+            return False
+        
+        tunnel.data_sent_bytes += sent_bytes
+        tunnel.data_received_bytes += received_bytes
+        tunnel.last_activity = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.repository.save_tunnel(tunnel)
+        return True
+
+    def get_tunnel_metrics(self, tunnel_id: int) -> Dict[str, any]:
+        tunnel = self.repository.get_tunnel(tunnel_id)
+        if not tunnel:
+            return {}
+        
+        return {
+            "sent_bytes": tunnel.data_sent_bytes,
+            "received_bytes": tunnel.data_received_bytes,
+            "last_activity": tunnel.last_activity
+        }
+
+    def evaluate_tunnel_entropy(self, tunnel_id: int) -> bool:
+        tunnel = self.repository.get_tunnel(tunnel_id)
+        if not tunnel:
+            return False
+        
+        # Map tunnel type to entropy data type
+        type_mapping = {
+            Tunnel.TYPE_HTTP: 'texto plano',
+            Tunnel.TYPE_IMAGE_TUNNEL: 'imagenes jpeg',
+            Tunnel.TYPE_SHADOWSOCKS: 'datos cifrados',
+            Tunnel.TYPE_STEGANOGRAPHY: 'post compresion data',
+            Tunnel.TYPE_DNS: 'base64 encode',
+            Tunnel.TYPE_ICMP: 'texto plano'
+        }
+        
+        portador_type = type_mapping.get(tunnel.tunnel_type, 'texto plano')
+        portador_size = tunnel.data_sent_bytes + tunnel.data_received_bytes
+        
+        # We evaluate if the current tunnel activity could hide a "Standard Exfiltration Package" (1KB of code)
+        is_valid, message = entropy.evaluate_exfiltration(
+            info_type='codigo fuente',
+            info_size_bytes=1024,
+            portador_type=portador_type,
+            portador_size_bytes=max(portador_size, 1) # Avoid 0
+        )
+        
+        tunnel.entropy_score = entropy.ENTROPY_DATA_TYPES.get(portador_type, 0.0)
+        tunnel.entropy_warning = f"[{tunnel.tunnel_type}] {message}"
+        
+        self.repository.save_tunnel(tunnel)
+        return True
 
     def set_connection_check_policy(self, interval_seconds: int):
         self.check_interval = interval_seconds

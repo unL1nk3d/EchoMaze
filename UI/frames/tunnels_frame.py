@@ -37,6 +37,12 @@ class TunnelsDashboardFrame(Frame):
             label="Technique:",
             name="technique"
         )
+        self.type_list = ListBox(
+            height=4,
+            options=[(t, t) for t in Tunnel.ALLOWED_TYPES],
+            label="Type:",
+            name="tunnel_type"
+        )
 
         layout_stats = Layout([100])
         self.add_layout(layout_stats)
@@ -53,22 +59,26 @@ class TunnelsDashboardFrame(Frame):
         layout_form.add_widget(self.dest_ip_text, 1)
         layout_form.add_widget(self.remote_port_text, 1)
 
-        layout_policy = Layout([50, 50])
+        layout_policy = Layout([33, 33, 33])
         self.add_layout(layout_policy)
         layout_policy.add_widget(self.check_interval_text, 0)
         layout_policy.add_widget(self.technique_list, 1)
+        layout_policy.add_widget(self.type_list, 2)
 
-        layout_buttons = Layout([1, 1, 1, 1, 1, 1, 1, 1, 1])
+        layout_buttons = Layout([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
         self.add_layout(layout_buttons)
         layout_buttons.add_widget(Button("Add Tunnel", self._add_tunnel), 0)
-        layout_buttons.add_widget(Button("Set Policy", self._set_policy), 1)
-        layout_buttons.add_widget(Button("Set Tech", self._set_technique), 2)
-        layout_buttons.add_widget(Button("Activate", self._activate_tunnel), 3)
-        layout_buttons.add_widget(Button("Activating", self._set_activating), 4)
-        layout_buttons.add_widget(Button("Deactivate", self._deactivate_tunnel), 5)
-        layout_buttons.add_widget(Button("Send Beacon", self._send_beacon), 6)
-        layout_buttons.add_widget(Button("Delete Selected", self._delete_tunnel), 7)
-        layout_buttons.add_widget(Button("Close", self._close), 8)
+        layout_buttons.add_widget(Button("Next Phase", self._advance_phase), 1)
+        layout_buttons.add_widget(Button("Eval Ent", self._evaluate_entropy), 2)
+        layout_buttons.add_widget(Button("Sim Transf", self._simulate_transfer), 3)
+        layout_buttons.add_widget(Button("Set Policy", self._set_policy), 4)
+        layout_buttons.add_widget(Button("Set Tech", self._set_technique), 5)
+        layout_buttons.add_widget(Button("Activate", self._activate_tunnel), 6)
+        layout_buttons.add_widget(Button("Activating", self._set_activating), 7)
+        layout_buttons.add_widget(Button("Deactivate", self._deactivate_tunnel), 8)
+        layout_buttons.add_widget(Button("Send Beacon", self._send_beacon), 9)
+        layout_buttons.add_widget(Button("Delete Selected", self._delete_tunnel), 10)
+        layout_buttons.add_widget(Button("Close", self._close), 11)
 
         self.fix()
         self._refresh_data()
@@ -155,7 +165,9 @@ class TunnelsDashboardFrame(Frame):
 
     def _refresh_data(self):
         stats = self.tunnels_usecase.get_tunnel_stats()
-        self.stats_label.text = f"Stats - Tot:{stats['total']} | Act:{stats['active']} | Disc:{stats['disconnected']} | Deact:{stats['deactivated']} | Activating:{stats['activating']} | Filt:{stats['filtered']} | Hang:{stats['hanging']}"
+        global_e = stats.get('global_entropy', 0.0)
+        global_w = stats.get('entropy_warning', "")
+        self.stats_label.text = f"Stats - Tot:{stats['total']} | Act:{stats['active']} | Ent:{global_e:.2f} ({global_w})"
         self.check_interval_text.value = str(self.tunnels_usecase.check_interval)
 
         tunnels = self.tunnels_usecase.get_all_tunnels()
@@ -164,10 +176,32 @@ class TunnelsDashboardFrame(Frame):
             hanging_str = "[HANGING] " if t.is_hanging else ""
             remote_str = f"-> {t.dest_ip}:{t.remote_port}" if t.dest_ip else ""
             tech_str = f" [{t.technique}]" if t.technique != Tunnel.TECHNIQUE_NONE else ""
-            desc = f"{hanging_str}ID:{t.id} | {t.source_ip}:{t.local_port} {remote_str} ({t.status}){tech_str}"
+            type_str = f" <{t.tunnel_type}>"
+            metrics_str = f" | S:{t.data_sent_bytes}B R:{t.data_received_bytes}B"
+            entropy_str = f" | E:{t.entropy_score:.1f} ({t.entropy_warning})"
+            desc = f"{hanging_str}ID:{t.id} | {t.source_ip}:{t.local_port} {remote_str} {type_str} ({t.status}) [{t.phase}]{tech_str}{metrics_str}{entropy_str}"
             options.append((desc, t.id))
 
         self.tunnels_list.options = options
+
+    def _evaluate_entropy(self):
+        selected_id = self.tunnels_list.value
+        if selected_id is not None:
+            self.tunnels_usecase.evaluate_tunnel_entropy(selected_id)
+            self._refresh_data()
+
+    def _simulate_transfer(self):
+        selected_id = self.tunnels_list.value
+        if selected_id is not None:
+            # Simulate 1KB transfer for audit visibility
+            self.tunnels_usecase.register_data_transfer(selected_id, 1024, 512)
+            self._refresh_data()
+
+    def _advance_phase(self):
+        selected_id = self.tunnels_list.value
+        if selected_id is not None:
+            self.tunnels_usecase.advance_tunnel_phase(selected_id)
+            self._refresh_data()
 
     def _set_policy(self):
         self.save()
@@ -218,11 +252,12 @@ class TunnelsDashboardFrame(Frame):
         local_p = data.get("local_port")
         dest_ip = data.get("dest_ip")
         remote_p = data.get("remote_port")
+        t_type = data.get("tunnel_type")
 
         if src_ip and local_p and local_p.isdigit():
             lp = int(local_p)
             rp = int(remote_p) if remote_p and remote_p.isdigit() else None
-            self.tunnels_usecase.create_tunnel(src_ip, lp, dest_ip, rp)
+            self.tunnels_usecase.create_tunnel(src_ip, lp, dest_ip, rp, tunnel_type=t_type)
             self._refresh_data()
 
     def _delete_tunnel(self):
@@ -238,6 +273,7 @@ class TunnelsDashboardFrame(Frame):
             for t in tunnels:
                 if t.id == selected_id:
                     self.technique_list.value = t.technique
+                    self.type_list.value = t.tunnel_type
                     break
 
     def _close(self):

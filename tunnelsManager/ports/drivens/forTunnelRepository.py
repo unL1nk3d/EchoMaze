@@ -12,5 +12,9 @@ class ForTunnelRepository(ABC):
         pass
 
     @abstractmethod
+    def get_tunnel(self, tunnel_id: int) -> Tunnel:
+        pass
+
+    @abstractmethod
     def delete_tunnel(self, tunnel_id: int) -> bool:
         pass

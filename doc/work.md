@@ -1381,3 +1381,101 @@ Ahora lanzo el flujo automático – cuando termine, te muestro el resultado con
        * Se añadió test_technique_and_beacon_buttons en la suite de UI para asegurar la correcta integración de los botones.
 
   Todas las pruebas (15 en total) han pasado exitosamente. El sistema ahora permite una gestión inteligente de los implantes, equilibrando la automatización con el control manual absoluto del operador.
+
+
+  como operador
+requiero que los tuneles tengan 5 estados posibles 
+active
+disconected 
+deactivated 
+activating
+filtered connection 
+(nota del arquitecto de software: estos cambios deberian implementarse en el hexagono del TunnelsManager)
+
+como operador 
+requiero poder incorporar 
+la posibilidad de establecer una politica en 
+TunnelsUseCase
+para poder establecer en que 
+tiempo quiero que el tunel 
+compruebe que la conexion sigue activa 
+
+como operador requiero poder 
+incorporar una forma de 
+desactivar/ activar los tuneles 
+el desctivado o activado es diferente 
+a el estado disconected o active 
+ya que en estos estados el usuario solicitaria 
+la desconexion 
+
+como operador requiero 
+tener la posibilidad de setear 
+si el implante realizara alguna 
+tecnica como por ejemplo beaconing
+para comprobar si se debe establecer un tunel 
+o no dependiendo de si el operador marco el tunel como deactivated o activing 
+
+
+
+como LLM que busca ayudar a los usuarios requiero
+que haya una API expuesta que pueda consumir para consultar todas las funciones de tunnelsManager 
+
+
+
+✦ He identificado y corregido el bug que impedía la simulación correcta del beaconing. El problema residía en que la lógica del core era demasiado restrictiva y no reconocía señales de implantes si el túnel ya
+  estaba en estado active o si se encontraba en otros estados de transición.
+
+  Correcciones y Mejoras Realizadas:
+
+   1. Lógica de Beacon Flexibilizada (TunnelsUseCase):
+       * Ahora el método process_implant_beacon acepta y procesa señales para túneles que ya están en estado active, devolviendo una confirmación positiva de que el beacon fue recibido (heartbeat).
+       * Se permite la transición automática a active desde los estados activating, disconnected y filtered al recibir un beacon, siempre que la técnica sea beaconing.
+       * Se mantiene el respeto estricto al estado deactivated: si el operador marcó el túnel como desactivado, el beacon seguirá siendo ignorado.
+   2. Mejora en la Interfaz (TunnelsDashboardFrame):
+       * Botón "Activating": Se añadió un nuevo botón para poner explícitamente un túnel en estado de "espera de señal" (activating).
+       * Feedback Detallado: El mensaje emergente al enviar un beacon ahora es más descriptivo, diferenciando si fue procesado correctamente o por qué fue ignorado (ej. técnica no configurada o túnel
+         desactivado).
+   3. Importación Faltante: Se corrigió un error de NameError al importar la clase Tunnel dentro del frame, lo cual causaba fallos en el entorno de ejecución.
+   4. Verificación:
+       * Se actualizaron las pruebas unitarias y de integración para cubrir estos nuevos escenarios y el botón adicional.
+
+  Ahora el flujo de trabajo es el siguiente:
+   1. Selecciona un túnel.
+   2. Marca la técnica como Beaconing y pulsa Set Tech.
+   3. Pulsa Activating (opcional, ahora funciona desde otros estados también).
+   4. Pulsa Send Beacon y verás el mensaje "Beacon received and processed!" y el estado cambiará a active.
+
+  Todas las pruebas (15 OK) confirman que el sistema es ahora mucho más estable y predecible.
+  
+
+  ✦ Se ha completado la implementación de la historia de usuario siguiendo los requerimientos del arquitecto de software para el manejo de túneles mediante un ciclo de vida de 4 fases controlado dentro del
+  hexágono.
+
+  Cambios Arquitectónicos Realizados:
+
+   1. Modelo (tunnelsManager/models/tunnel.py):
+       * Se añadieron las constantes de fase: PHASE_CREATION, PHASE_SETTING_UP, PHASE_INTERFACE_REGISTRATION y PHASE_READY_TO_SEND.
+       * Se agregó el atributo phase a la clase Tunnel, inicializado por defecto en PHASE_CREATION.
+
+   2. Puerto de Entrada (Driver Port - tunnelsManager/ports/drivers/forTunnelCreation.py):
+       * Se definieron métodos explícitos para cada transición de estado:
+           * create_tunnel(...): Inicia la Fase 1.
+           * setup_tunnel(tunnel_id): Transiciona a la Fase 2.
+           * register_interface(tunnel_id): Transiciona a la Fase 3.
+           * set_ready(tunnel_id): Transiciona a la Fase 4 y activa el túnel.
+           * advance_tunnel_phase(tunnel_id): Orquestador para avance automático.
+
+   3. Lógica de Negocio (Core - tunnelsManager/core.py):
+       * Se implementó la lógica de validación de estados. Un túnel solo puede avanzar si se encuentra en la fase inmediata anterior, garantizando la integridad del flujo de trabajo.
+
+   4. Puerto de Salida (Driven Port - tunnelsManager/ports/drivens/forTunnelRepository.py):
+       * Se añadió el método get_tunnel(tunnel_id) para permitir la recuperación de entidades individuales para su procesamiento por fases.
+
+   5. Interfaz de Usuario (UI/frames/tunnels_frame.py):
+       * El dashboard de túneles ahora muestra la fase actual de cada túnel (ej. [tunnel creation]).
+       * Se añadió el botón "Next Phase" que permite al operador avanzar manualmente el túnel a través de sus etapas de configuración.
+
+  Validación:
+   * Se creó y ejecutó exitosamente la suite de pruebas test/test_tunnel_phases.py, la cual verifica tanto el flujo feliz de las 4 fases como la prevención de saltos de fase ilegales.
+   * Se verificó que los cambios no introdujeran regresiones en las funcionalidades existentes de gestión y estadísticas de túneles.
+

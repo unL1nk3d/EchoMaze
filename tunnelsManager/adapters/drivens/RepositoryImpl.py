@@ -23,6 +23,9 @@ class InMemoryTunnelRepository(ForTunnelRepository):
     def list_tunnels(self) -> List[Tunnel]:
         return list(self._tunnels.values())
 
+    def get_tunnel(self, tunnel_id: int) -> Tunnel:
+        return self._tunnels.get(tunnel_id)
+
     def delete_tunnel(self, tunnel_id: int) -> bool:
         if tunnel_id in self._tunnels:
             del self._tunnels[tunnel_id]
