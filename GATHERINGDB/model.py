@@ -472,6 +472,7 @@ class TunnelDB(BaseEntity):
     last_activity: str
     entropy_score: float
     entropy_warning: str
+    data_type: str = "texto plano"
 
     @classmethod
     def get_guid(cls):
@@ -481,15 +482,15 @@ class TunnelDB(BaseEntity):
         return (self.source_ip, self.dest_ip, self.local_port, self.remote_port,
                 self.status, self.technique, self.phase, self.tunnel_type,
                 self.data_sent_bytes, self.data_received_bytes, self.last_activity,
-                self.entropy_score, self.entropy_warning)
+                self.entropy_score, self.entropy_warning, self.data_type)
 
     @classmethod
     def insert(cls):
         return """INSERT INTO tunnels 
             (source_ip, dest_ip, local_port, remote_port, status, technique, phase, 
              tunnel_type, data_sent_bytes, data_received_bytes, last_activity, 
-             entropy_score, entropy_warning) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+             entropy_score, entropy_warning, data_type) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
 
     @classmethod
     def update(cls):
@@ -497,7 +498,7 @@ class TunnelDB(BaseEntity):
             source_ip=?, dest_ip=?, local_port=?, remote_port=?, status=?, 
             technique=?, phase=?, tunnel_type=?, data_sent_bytes=?, 
             data_received_bytes=?, last_activity=?, entropy_score=?, 
-            entropy_warning=? WHERE id=?"""
+            entropy_warning=?, data_type=? WHERE id=?"""
 
     @classmethod
     def delete(cls):
@@ -505,15 +506,15 @@ class TunnelDB(BaseEntity):
 
     @classmethod
     def select(cls):
-        return "SELECT * FROM tunnels;"
+        return "SELECT id, source_ip, dest_ip, local_port, remote_port, status, technique, phase, tunnel_type, data_sent_bytes, data_received_bytes, last_activity, entropy_score, entropy_warning, data_type FROM tunnels;"
 
     @classmethod
     def selectById(cls):
-        return "SELECT * FROM tunnels WHERE id = ?;"
+        return "SELECT id, source_ip, dest_ip, local_port, remote_port, status, technique, phase, tunnel_type, data_sent_bytes, data_received_bytes, last_activity, entropy_score, entropy_warning, data_type FROM tunnels WHERE id = ?;"
 
     @classmethod
     def selectCoincidence(cls, field):
-        return f"SELECT * FROM tunnels WHERE {field} = ?;"
+        return f"SELECT id, source_ip, dest_ip, local_port, remote_port, status, technique, phase, tunnel_type, data_sent_bytes, data_received_bytes, last_activity, entropy_score, entropy_warning, data_type FROM tunnels WHERE {field} = ?;"
 
     @classmethod
     def create_table(cls):
@@ -531,7 +532,8 @@ class TunnelDB(BaseEntity):
             data_received_bytes INTEGER DEFAULT 0,
             last_activity TEXT,
             entropy_score REAL DEFAULT 0.0,
-            entropy_warning TEXT
+            entropy_warning TEXT,
+            data_type TEXT DEFAULT 'texto plano'
         );"""
 
 @dataclass

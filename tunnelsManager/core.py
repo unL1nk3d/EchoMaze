@@ -14,7 +14,7 @@ class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics
         self.connection_tester = connection_tester
         self.check_interval = 60 # Default interval in seconds
 
-    def create_tunnel(self, source_ip: str, local_port: int, dest_ip: str = None, remote_port: int = None, tunnel_type: str = Tunnel.TYPE_HTTP) -> Tunnel:
+    def create_tunnel(self, source_ip: str, local_port: int, dest_ip: str = None, remote_port: int = None, tunnel_type: str = Tunnel.TYPE_HTTP, data_type: str = None) -> Tunnel:
         # Check if local port is actually open/available, but we save it anyway for tracking
         is_open = self.connection_tester.test_local_port_open(local_port)
         status = Tunnel.STATUS_ACTIVE if is_open else Tunnel.STATUS_DISCONNECTED
@@ -32,7 +32,8 @@ class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics
             data_received_bytes=0,
             last_activity=None,
             entropy_score=0.0,
-            entropy_warning="Pending evaluation"
+            entropy_warning="Pending evaluation",
+            data_type=data_type
         )
         return self.repository.save_tunnel(tunnel)
 
@@ -147,17 +148,21 @@ class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics
         if not tunnel:
             return False
         
-        # Map tunnel type to entropy data type
-        type_mapping = {
-            Tunnel.TYPE_HTTP: 'texto plano',
-            Tunnel.TYPE_IMAGE_TUNNEL: 'imagenes jpeg',
-            Tunnel.TYPE_SHADOWSOCKS: 'datos cifrados',
-            Tunnel.TYPE_STEGANOGRAPHY: 'post compresion data',
-            Tunnel.TYPE_DNS: 'base64 encode',
-            Tunnel.TYPE_ICMP: 'texto plano'
-        }
+        # Priority: predefined data_type, then fallback to tunnel_type mapping
+        if hasattr(tunnel, 'data_type') and tunnel.data_type in entropy.ENTROPY_DATA_TYPES:
+            portador_type = tunnel.data_type
+        else:
+            # Map tunnel type to entropy data type (fallback)
+            type_mapping = {
+                Tunnel.TYPE_HTTP: 'texto plano',
+                Tunnel.TYPE_IMAGE_TUNNEL: 'imagenes jpeg',
+                Tunnel.TYPE_SHADOWSOCKS: 'datos cifrados',
+                Tunnel.TYPE_STEGANOGRAPHY: 'post compresion data',
+                Tunnel.TYPE_DNS: 'base64 encode',
+                Tunnel.TYPE_ICMP: 'texto plano'
+            }
+            portador_type = type_mapping.get(tunnel.tunnel_type, 'texto plano')
         
-        portador_type = type_mapping.get(tunnel.tunnel_type, 'texto plano')
         portador_size = tunnel.data_sent_bytes + tunnel.data_received_bytes
         
         # We evaluate if the current tunnel activity could hide a "Standard Exfiltration Package" (1KB of code)
@@ -169,7 +174,7 @@ class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics
         )
         
         tunnel.entropy_score = entropy.ENTROPY_DATA_TYPES.get(portador_type, 0.0)
-        tunnel.entropy_warning = f"[{tunnel.tunnel_type}] {message}"
+        tunnel.entropy_warning = f"[{tunnel.tunnel_type} / {portador_type}] {message}"
         
         self.repository.save_tunnel(tunnel)
         return True

@@ -200,9 +200,7 @@ class TunnelsDashboardFrame(Frame):
             remote_str = f"-> {t.dest_ip}:{t.remote_port}" if t.dest_ip else ""
             tech_str = f" [{t.technique}]" if t.technique != Tunnel.TECHNIQUE_NONE else ""
             type_str = f" <{t.tunnel_type}>"
-            metrics_str = f" | S:{t.data_sent_bytes}B R:{t.data_received_bytes}B"
-            entropy_str = f" | E:{t.entropy_score:.1f} ({t.entropy_warning})"
-            desc = f"{hanging_str}ID:{t.id} | {t.source_ip}:{t.local_port} {remote_str} {type_str} ({t.status}) [{t.phase}]{tech_str}{metrics_str}{entropy_str}"
+            desc = f"{hanging_str}ID:{t.id} | {t.source_ip}:{t.local_port} {remote_str} {type_str} ({t.status}) [{t.phase}]{tech_str}"
             options.append((desc, t.id))
 
         self.tunnels_list.options = options
@@ -212,6 +210,18 @@ class TunnelsDashboardFrame(Frame):
         if selected_id is not None:
             self.tunnels_usecase.evaluate_tunnel_entropy(selected_id)
             self._refresh_data()
+            
+            # Show evaluation in a PopUpDialog to keep the dashboard clean
+            tunnels = self.tunnels_usecase.get_all_tunnels()
+            for t in tunnels:
+                if t.id == selected_id:
+                    msg = (f"Entropy Evaluation for Tunnel {t.id}:\n\n"
+                           f"Type: {t.tunnel_type}\n"
+                           f"Carrier Data Type: {t.data_type}\n"
+                           f"Entropy Score: {t.entropy_score:.2f}\n"
+                           f"Assessment: {t.entropy_warning}")
+                    self._scene.add_effect(PopUpDialog(self._screen, msg, ["OK"]))
+                    break
 
     def _simulate_transfer(self):
         selected_id = self.tunnels_list.value

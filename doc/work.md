@@ -1551,3 +1551,101 @@ que haya una API expuesta que pueda consumir para consultar todas las funciones 
 
   Ahora el operador tiene una herramienta mucho más ergonómica y profesional, donde la complejidad técnica está a solo una pulsación de tecla ('o') sin sacrificar la claridad de las operaciones básicas.
 
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  Topic: Finalizing the implementation of IP and port selection in the Implants Dashboard.
+
+
+✦ Se ha completado la implementación de la historia de usuario, permitiendo a los operadores insertar direcciones IP y puertos desde la base de datos en el panel de implantes mediante la tecla 's'.
+
+  Mejoras en la Interfaz de Implantes (UI/frames/implants_frame.py):
+
+   1. Selección Inteligente con Tecla 'S':
+       * Se implementó la lógica de captura de eventos para la tecla 's' (o 'S') dentro del dashboard de implantes.
+       * LHOST: Al estar posicionado sobre el campo de IP del listener y presionar 's', se despliega un popup con todas las IPs registradas en el sistema para una selección rápida.
+       * LPORT: Al estar sobre el campo de puerto y presionar 's', el sistema filtra y muestra automáticamente los puertos conocidos para la IP seleccionada en LHOST, facilitando la configuración de la
+         conexión de retorno.
+
+   2. Corrección de Layout:
+       * Se corrigió un error en la definición del layout donde el widget de payload (área de texto del código del implante) no se visualizaba correctamente. Ahora el código generado es plenamente visible y
+         editable.
+
+   3. Consistencia de Experiencia de Usuario (UX):
+       * Se portó el patrón de diseño utilizado en el dashboard de túneles hacia el de implantes, garantizando que el operador no tenga que reaprender comandos entre diferentes módulos del sistema.
+
+   4. Validación Técnica:
+       * Se creó y validó exitosamente la suite de pruebas UI/tests/test_implants_frame.py, la cual verifica específicamente que la tecla 's' dispare los diálogos de selección correctos dependiendo del campo
+         enfocado.
+
+  Con esta funcionalidad, la generación de implantes es mucho más ágil, eliminando la necesidad de escribir manualmente direcciones IP y puertos que ya están almacenados en el sistema.
+
+
+                                                                                                                                                                                                 ? for shortcuts
+─────────────────────────────────────────────────────────────
+
+✦ He completado el desarrollo de la API para tunnelsManager siguiendo los principios de arquitectura limpia y TDD del proyecto.
+
+  Cambios realizados:
+
+   1. Nueva API Unificada (tunnelsManager/api.py): Se implementó la clase TunnelsManagerAPI que actúa como una fachada (Facade) para los casos de uso de túneles (TunnelsUseCase) e implantes (ImplantsUseCase).
+      Esto proporciona un punto de entrada único y simplificado para consumidores externos como LLMs o servidores MCP.
+   2. Mecanismo de Autodescubrimiento: Se añadió el método list_available_functions() que utiliza introspección para listar todas las capacidades disponibles, sus firmas y descripciones. Esto permite que un
+      LLM consulte dinámicamente qué funciones puede ejecutar.
+   3. Exportación Global: Se actualizó tunnelsManager/__init__.py para facilitar la importación de la API mediante from tunnelsManager import get_tunnels_api.
+   4. Documentación (tunnelsManager/README.md): Se creó una documentación detallada que explica cómo instanciar la API, cómo utilizar el descubrimiento de funciones y ejemplos prácticos de gestión de túneles e
+      implantes.
+   5. Pruebas Automatizadas (test/test_tunnels_api.py): Se desarrolló una suite de pruebas para validar que la API expone correctamente todas las funciones y que el mecanismo de descubrimiento funciona según
+      lo esperado.
+
+  Ejemplo de uso para un LLM:
+
+   1 from tunnelsManager import get_tunnels_api
+   2
+   3 api = get_tunnels_api()
+   4
+   5 # Consultar todas las funciones disponibles
+   6 capabilities = api.list_available_functions()
+   7 for cap in capabilities:
+   8     print(f"Función: {cap['name']} | Firma: {cap['signature']}")
+
+  Las pruebas pueden ejecutarse con:
+  python -m unittest test/test_tunnels_api.py
+
+✦ He completado el desarrollo de la historia de usuario para permitir que los túneles posean un tipo de dato predefinido para el cálculo automático de entropía.
+
+  Cambios realizados:
+
+   1. Actualización del Modelo de Datos:
+       * Se añadió el campo data_type a la entidad de dominio Tunnel en tunnelsManager/models/tunnel.py.
+       * Se actualizó la entidad de base de datos TunnelDB en GATHERINGDB/model.py para incluir la columna data_type con un valor por defecto de "texto plano".
+   2. Persistencia y Repositorio:
+       * Se actualizaron los métodos de mapeo en DatabaseTunnelRepository para asegurar que el nuevo campo se guarde y recupere correctamente de la base de datos.
+       * Se creó una nueva migración (migrations/migration_002_add_tunnel_data_type.py) para añadir la columna a bases de datos existentes de forma segura.
+   3. Lógica de Negocio (Casos de Uso):
+       * Se modificó create_tunnel en TunnelsUseCase para permitir especificar el data_type opcionalmente al momento de la creación.
+       * Se refactorizó evaluate_tunnel_entropy para priorizar el data_type predefinido del túnel. Si no se especifica, el sistema utiliza un mapeo automático basado en el tipo de túnel (fallback), manteniendo
+         la compatibilidad hacia atrás.
+   4. API y Documentación:
+       * Se actualizó la interfaz ForTunnelCreation para incluir el nuevo parámetro.
+       * Se actualizó tunnelsManager/README.md con ejemplos de cómo usar el nuevo parámetro data_type.
+   5. Pruebas de Verificación:
+       * Se creó test/test_tunnel_entropy_data_type.py para validar que el cálculo de entropía utiliza correctamente el tipo de dato especificado y que el mecanismo de fallback sigue funcionando para túneles
+         heredados.
+
+  Cómo utilizarlo:
+
+  Al crear un túnel, ahora puedes especificar el tipo de portador para un cálculo de entropía más preciso:
+
+    1 # Creación con tipo de dato específico
+    2 tunnel = api.create_tunnel(
+    3     source_ip="192.168.1.10",
+    4     local_port=8080,
+    5     tunnel_type="HTTP",
+    6     data_type="imagenes jpeg"
+    7 )
+    8
+    9 # El cálculo de entropía ahora usará 7.6 bits/byte (jpeg) en lugar de 4.1 (texto plano)
+   10 api.evaluate_tunnel_entropy(tunnel.id)
+
+  Las pruebas de verificación pueden ejecutarse con:
+  python -m unittest test/test_tunnel_entropy_data_type.py
+

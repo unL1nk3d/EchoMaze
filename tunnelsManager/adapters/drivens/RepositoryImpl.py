@@ -54,7 +54,8 @@ class DatabaseTunnelRepository(ForTunnelRepository):
             data_received_bytes=db_tunnel.data_received_bytes,
             last_activity=db_tunnel.last_activity,
             entropy_score=db_tunnel.entropy_score,
-            entropy_warning=db_tunnel.entropy_warning
+            entropy_warning=db_tunnel.entropy_warning,
+            data_type=db_tunnel.data_type
         )
 
     def _to_db(self, tunnel: Tunnel) -> TunnelDB:
@@ -72,7 +73,8 @@ class DatabaseTunnelRepository(ForTunnelRepository):
             data_received_bytes=tunnel.data_received_bytes,
             last_activity=tunnel.last_activity,
             entropy_score=tunnel.entropy_score,
-            entropy_warning=tunnel.entropy_warning
+            entropy_warning=tunnel.entropy_warning,
+            data_type=tunnel.data_type
         )
 
     def save_tunnel(self, tunnel: Tunnel) -> Tunnel:
