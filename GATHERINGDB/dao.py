@@ -84,8 +84,8 @@ class GenericDAO:
                 except sqlite3.IntegrityError as e:
                     log.error(f"Error de integridad al insertar {data}: {e}")
                     raise IntegrityError(type(data).__name__) from e
-                cmps = cursor.rowcount
-        return cmps
+                return cursor.lastrowid
+        return 0
 
     @classmethod
     def actualizar(cls, data: T, id: int) -> int:

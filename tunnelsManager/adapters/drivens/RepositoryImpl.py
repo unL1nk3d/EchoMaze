@@ -80,11 +80,8 @@ class DatabaseTunnelRepository(ForTunnelRepository):
     def save_tunnel(self, tunnel: Tunnel) -> Tunnel:
         db_tunnel = self._to_db(tunnel)
         if tunnel.id is None:
-            self.dao.insertar(db_tunnel)
-            all_tunnels = self.dao.seleccionar(TunnelDB)
-            if all_tunnels:
-                last_tunnel = max(all_tunnels, key=lambda x: x.id)
-                tunnel.id = last_tunnel.id
+            new_id = self.dao.insertar(db_tunnel)
+            tunnel.id = new_id
         else:
             self.dao.actualizar(db_tunnel, tunnel.id)
         return tunnel
@@ -132,11 +129,8 @@ class DatabaseImplantRepository(ForImplantRepository):
     def save_implant(self, implant: Implant) -> Implant:
         db_implant = self._to_db(implant)
         if implant.id is None:
-            self.dao.insertar(db_implant)
-            all_implants = self.dao.seleccionar(ImplantDB)
-            if all_implants:
-                last_implant = max(all_implants, key=lambda x: x.id)
-                implant.id = last_implant.id
+            new_id = self.dao.insertar(db_implant)
+            implant.id = new_id
         else:
             self.dao.actualizar(db_implant, implant.id)
         return implant

@@ -159,7 +159,9 @@ class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics
                 Tunnel.TYPE_SHADOWSOCKS: 'datos cifrados',
                 Tunnel.TYPE_STEGANOGRAPHY: 'post compresion data',
                 Tunnel.TYPE_DNS: 'base64 encode',
-                Tunnel.TYPE_ICMP: 'texto plano'
+                Tunnel.TYPE_ICMP: 'texto plano',
+                Tunnel.TYPE_SOCKS4: 'datos cifrados',
+                Tunnel.TYPE_SOCKS5: 'datos cifrados'
             }
             portador_type = type_mapping.get(tunnel.tunnel_type, 'texto plano')
         
