@@ -55,7 +55,8 @@ class DatabaseTunnelRepository(ForTunnelRepository):
             last_activity=db_tunnel.last_activity,
             entropy_score=db_tunnel.entropy_score,
             entropy_warning=db_tunnel.entropy_warning,
-            data_type=db_tunnel.data_type
+            data_type=db_tunnel.data_type,
+            implant_id=db_tunnel.implant_id
         )
 
     def _to_db(self, tunnel: Tunnel) -> TunnelDB:
@@ -74,7 +75,8 @@ class DatabaseTunnelRepository(ForTunnelRepository):
             last_activity=tunnel.last_activity,
             entropy_score=tunnel.entropy_score,
             entropy_warning=tunnel.entropy_warning,
-            data_type=tunnel.data_type
+            data_type=tunnel.data_type,
+            implant_id=tunnel.implant_id
         )
 
     def save_tunnel(self, tunnel: Tunnel) -> Tunnel:
@@ -113,7 +115,8 @@ class DatabaseImplantRepository(ForImplantRepository):
             implant_type=db_implant.implant_type,
             payload=db_implant.payload,
             description=db_implant.description,
-            created_at=db_implant.created_at
+            created_at=db_implant.created_at,
+            supported_tunnel_type=db_implant.supported_tunnel_type
         )
 
     def _to_db(self, implant: Implant) -> ImplantDB:
@@ -123,7 +126,8 @@ class DatabaseImplantRepository(ForImplantRepository):
             implant_type=implant.implant_type,
             payload=implant.payload,
             description=implant.description,
-            created_at=implant.created_at
+            created_at=implant.created_at,
+            supported_tunnel_type=implant.supported_tunnel_type
         )
 
     def save_implant(self, implant: Implant) -> Implant:

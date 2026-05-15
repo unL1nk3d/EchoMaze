@@ -15,7 +15,7 @@ class ImplantsDashboardFrame(Frame):
             reduce_cpu=True
         )
         self.model = model
-        self.implants_usecase = model.implants
+        self.implants_usecase = model.implants_usecase
 
         self.implants_list = ListBox(
             height=10,

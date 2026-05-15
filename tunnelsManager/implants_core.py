@@ -8,16 +8,18 @@ class ImplantsUseCase(ForImplantManagement):
     def __init__(self, repository: ForImplantRepository):
         self.repository = repository
 
-    def create_implant(self, name: str, implant_type: str, payload: str, description: str = "") -> Implant:
+    def create_implant(self, name: str, implant_type: str = Implant.TYPE_PYTHON, payload: str = "", description: str = "", supported_tunnel_type: str = None) -> Implant:
         implant = Implant(
             id=None,
             name=name,
             implant_type=implant_type,
             payload=payload,
             description=description,
-            created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            supported_tunnel_type=supported_tunnel_type
         )
         return self.repository.save_implant(implant)
+
 
     def list_implants(self) -> List[Implant]:
         return self.repository.list_implants()

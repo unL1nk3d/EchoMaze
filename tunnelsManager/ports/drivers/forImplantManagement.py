@@ -4,7 +4,7 @@ from tunnelsManager.models.implant import Implant
 
 class ForImplantManagement(ABC):
     @abstractmethod
-    def create_implant(self, name: str, implant_type: str, payload: str, description: str = "") -> Implant:
+    def create_implant(self, name: str, implant_type: str, payload: str, description: str = "", supported_tunnel_type: str = None) -> Implant:
         """Crea y registra un nuevo implante en el sistema."""
         pass
 

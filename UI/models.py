@@ -201,7 +201,7 @@ class Observable:
 
 
 class GenericModel(Observable, Observer):
-    def __init__(self, repository, commands=None, port_service_map=None, ingestor=None, opsec_hooks=None, scoring_engine=None, session_manager=None, tunnels_usecase=None, implants_usecase=None):
+    def __init__(self, repository, commands=None, port_service_map=None, ingestor=None, opsec_hooks=None, scoring_engine=None, session_manager=None, tunnels_usecase=None, implants_usecase=None, agent_usecase=None):
         Observable.__init__(self)
         Observer.__init__(self)
         self.repo = RepositoryModel(repository)
@@ -210,8 +210,9 @@ class GenericModel(Observable, Observer):
         self.mapper = UIMapper(port_service_map=port_service_map)
         self.scoring_engine = scoring_engine
         self.session_manager = session_manager
-        self.tunnels = tunnels_usecase
-        self.implants = implants_usecase
+        self.tunnels_usecase = tunnels_usecase
+        self.implants_usecase = implants_usecase
+        self.agent_usecase = agent_usecase
         # Lazy import to avoid circular dependency
         if opsec_hooks is not None:
             self.opsec_hooks = opsec_hooks
@@ -350,6 +351,40 @@ class GenericModel(Observable, Observer):
                 # Update OPSEC score via ScoringEngine
                 if self.scoring_engine:
                     self.scoring_engine.register_artifact(ip, filename, noise_score)
+                return True
+        return False
+
+    def add_action(self, ip, operator, command_template, noise_score=0.0):
+        """
+        Registrar una nueva acción realizada por un operador o agente.
+        """
+        repo = self.repo.repository
+        nodes = repo.select_ip_by_field('ip', ip)
+        if not nodes:
+            return False
+        
+        node = nodes[0]
+        from GATHERINGDB.model import Actions
+        import datetime
+
+        action = Actions(
+            id=0,
+            node_id=node.id,
+            timestamp=datetime.datetime.now().isoformat(),
+            operator=operator,
+            command_template=command_template,
+            noise_score=noise_score
+        )
+
+        if hasattr(repo, 'insert_action'):
+            success = repo.insert_action(action)
+            if success:
+                if self.scoring_engine:
+                    # Assuming scoring engine has a way to register generic actions
+                    # or it will pick it up from the database later.
+                    # For now, let's trigger an update if it supports it.
+                    if hasattr(self.scoring_engine, 'register_action'):
+                        self.scoring_engine.register_action(ip, command_template, noise_score)
                 return True
         return False
 

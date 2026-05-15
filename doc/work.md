@@ -1665,3 +1665,274 @@ que haya una API expuesta que pueda consumir para consultar todas las funciones 
 
    * Antes: La lista de túneles contenía múltiples métricas (S:0B R:0B | E:0.0 ...) que dificultaban la lectura rápida.
    * Ahora: La lista es más compacta y legible. El operador solo ve el detalle de entropía cuando decide evaluarlo explícitamente mediante el botón correspondiente.
+
+  Hipótesis y Solución Implementada:
+
+  Para resolver esta problemática, he implementado la Hipótesis de Asociación Directa y Autoconfiguración:
+
+   1. Enriquecimiento del Modelo de Implante: Se añadió el campo supported_tunnel_type al modelo de Implant. Esto permite definir, desde la creación del implante, para qué tipo de túnel (HTTP, DNS, SOCKS4,
+      etc.) está diseñado.
+   2. Referencia en Túneles: Se añadió el campo implant_id al modelo de Tunnel, permitiendo una trazabilidad clara de qué implante está operando sobre qué túnel.
+   3. Autoconfiguración en la UI: En el Tunnel Dashboard, se añadió una lista desplegable de implantes disponibles. Al seleccionar un implante de la lista:
+       * El sistema detecta automáticamente su supported_tunnel_type.
+       * Se preselecciona automáticamente el tipo de túnel correspondiente en el formulario de registro.
+       * Al crear el túnel, la relación queda guardada de forma persistente.
+
+  Cambios Técnicos Realizados:
+
+   * Modelos de Datos: Actualización de Tunnel e Implant en la capa de dominio y en GATHERINGDB/model.py.
+   * Persistencia: Actualización de los repositorios y creación de la migración migrations/migration_003_link_implant_tunnel.py para añadir las columnas necesarias a la base de datos.
+   * Lógica de Negocio: Se actualizaron los casos de uso create_tunnel y create_implant para manejar estas nuevas asociaciones.
+   * Interfaz de Usuario:
+       * Actualización de TunnelsDashboardFrame para incluir el selector de implantes.
+       * Implementación de lógica de "auto-fill" basada en la selección del implante.
+       * Ajuste del layout para acomodar los nuevos controles de forma limpia.
+
+  Ejemplo de flujo para el operador:
+
+   1. El operador crea un implante llamado "DNS_Exfil" y le asigna el tipo de túnel "DNS".
+   2. El operador abre el Tunnel Dashboard.
+   3. Selecciona "DNS_Exfil" en la lista de implantes ligados.
+   4. Automáticamente, el campo "Type" del túnel cambia a "DNS", reduciendo errores manuales y agilizando la operación.
+
+  Las pruebas de integración y UI han sido verificadas para asegurar la estabilidad del sistema.
+
+✦ He corregido el error AttributeError: 'GenericModel' object has no attribute 'tunnels' que impedía la apertura del Tunnels Dashboard.
+
+  Causa del error:
+  Durante la refactorización anterior del modelo de datos (GenericModel), renombré los atributos para que fueran más descriptivos (tunnels ➔ tunnels_usecase e implants ➔ implants_usecase). Sin embargo, no
+  actualicé todas las referencias en los Frames de la interfaz de usuario, lo que causó que estos buscaran atributos que ya no existían.
+
+  Solución aplicada:
+
+   1. Actualización de TunnelsDashboardFrame: Se modificó UI/frames/tunnels_frame.py para que utilice model.tunnels_usecase al inicializarse.
+   2. Actualización de ImplantsDashboardFrame: Se modificó UI/frames/implants_frame.py para que utilice model.implants_usecase, previniendo un error similar en ese panel.
+   3. Consistencia del Sistema: Ahora tanto el modelo como las vistas están alineados con la nueva nomenclatura, asegurando la estabilidad de la interfaz gráfica.
+
+  Con estos cambios, el Dashboard de túneles debería cargar correctamente sin lanzar excepciones.
+
+✦ He corregido el error AttributeError: 'GenericModel' object has no attribute 'tunnels' que impedía la apertura del Tunnels Dashboard.
+
+  Causa del error:
+  Durante la refactorización anterior del modelo de datos (GenericModel), renombré los atributos para que fueran más descriptivos (tunnels ➔ tunnels_usecase e implants ➔ implants_usecase). Sin embargo, no
+  actualicé todas las referencias en los Frames de la interfaz de usuario, lo que causó que estos buscaran atributos que ya no existían.
+
+  Solución aplicada:
+
+   1. Actualización de TunnelsDashboardFrame: Se modificó UI/frames/tunnels_frame.py para que utilice model.tunnels_usecase al inicializarse.
+   2. Actualización de ImplantsDashboardFrame: Se modificó UI/frames/implants_frame.py para que utilice model.implants_usecase, previniendo un error similar en ese panel.
+   3. Consistencia del Sistema: Ahora tanto el modelo como las vistas están alineados con la nueva nomenclatura, asegurando la estabilidad de la interfaz gráfica.
+
+  Con estos cambios, el Dashboard de túneles debería cargar correctamente sin lanzar excepciones.
+
+✦ He implementado la capacidad de ligar implantes con túneles directamente desde el Tunnel Dashboard, permitiendo tanto la asociación durante la creación como la vinculación de túneles ya existentes.
+
+  Funcionalidades añadidas:
+
+   1. Vínculo en Creación: Al registrar un nuevo túnel, ahora puedes seleccionar un implante de la lista desplegable. Esto no solo liga el túnel al implante de forma persistente, sino que también auto-completa
+      el tipo de túnel basado en la configuración del implante.
+   2. Vínculo de Túneles Existentes: Se ha añadido un nuevo botón "Link" en las opciones avanzadas del Dashboard. Esto permite seleccionar un túnel de la lista superior, un implante de la lista desplegable
+      inferior y ligarlos con un solo clic sin necesidad de recrear el túnel.
+   3. Sincronización de Interfaz: Al seleccionar un túnel de la lista, el Dashboard ahora actualiza automáticamente el selector de implantes para mostrar cuál está actualmente vinculado a ese túnel, mejorando
+      la visibilidad para el operador.
+   4. Extensión del Caso de Uso: Se implementó el método link_tunnel_to_implant en TunnelsUseCase y se actualizó el puerto ForTunnelManagement para soportar esta operación a nivel lógico.
+
+  Cómo utilizarlo:
+
+   * Para un nuevo túnel: Selecciona el implante en el selector "Linked Implant" y verás cómo el campo "Type" se ajusta solo. Luego pulsa "Add Tunnel".
+   * Para un túnel existente: Selecciona el túnel en la lista principal, elige el implante deseado en el selector inferior y pulsa el botón "Link" (dentro de las opciones avanzadas, accesibles con la tecla
+     'O').
+
+  Esta mejora centraliza la gestión de la infraestructura de mando y control (C2) directamente en el panel de túneles, facilitando la trazabilidad de las herramientas desplegadas.
+
+  ✦ He ampliado significativamente las capacidades del EchoMaze AI Agent, permitiéndole acceder a la base de datos de inteligencia operativa y herramientas críticas del sistema.
+
+  Nuevas Capacidades Agénticas (Herramientas):
+
+  He actualizado el adaptador SystemToolExecutorAdapter para que el agente pueda "ver" y analizar los siguientes datos:
+
+   1. Topología de Red (get_network_topology): El agente ahora puede consultar el listado completo de IPs descubiertas, sus relaciones jerárquicas (pivoting) y los servicios detectados en cada una.
+   2. Análisis de OpSec (get_ip_opsec_analysis): El agente tiene acceso al motor de scoring. Puede consultar la puntuación de ruido de una IP, su nivel de riesgo actual y obtener sugerencias tácticas para
+      mantenerse bajo el radar.
+   3. Gestión de Artefactos (get_artifacts): El agente puede listar todos los archivos, scripts o evidencias (artefactos) vinculados a una dirección IP específica, facilitando el seguimiento de la intrusión.
+   4. Control de Túneles: Se mantiene y consolida la integración con la API de tunnelsManager, permitiendo al agente listar túneles activos e identificar configuraciones de C2.
+
+  Mejoras Arquitectónicas:
+
+   * Inyección Dinámica: Se modificó launch.py para inyectar el GenericModel en el agente tras su inicialización. Esto rompe dependencias circulares y le da al agente una "ventana" completa a todo el estado de
+     la aplicación.
+   * Aislamiento Hexagonal: Toda la lógica de ejecución de herramientas sigue encapsulada en el hexágono agenticLLM, protegiendo la integridad del core.
+   * Validación con TDD: Se creó una nueva suite de pruebas (test/test_agent_capabilities.py) que verifica que el agente puede listar y ejecutar correctamente estas nuevas herramientas.
+
+  Ejemplo de interacción enriquecida:
+
+  > Operador: "¿Cuál es la IP con mayor riesgo en nuestra red y qué artefactos tiene?"
+  >
+  > EchoAI: (Usando get_network_topology y get_ip_opsec_analysis) "La IP 10.0.0.51 presenta el mayor riesgo debido a un score de ruido de 85. Al consultar sus artefactos (usando get_artifacts), he encontrado
+  un script 'mimikatz.ps1' registrado hace 10 minutos. Te sugiero revisar el túnel SOCKS4 asociado para evitar detección por volumen de tráfico."
+
+  Estas capacidades convierten al agente en un verdadero copiloto táctico que puede razonar sobre el estado real de la operación.
+
+✦ He integrado con éxito el módulo cheatIngestor en las capacidades del agente AI, permitiéndole consultar técnicas de MITRE ATT&CK y plantillas de comandos de forma autónoma.
+
+  Nuevas Capacidades Agénticas:
+
+  He añadido la herramienta search_techniques al agente, lo que le permite interactuar directamente con el motor de ingesta de EchoMaze:
+
+   * Búsqueda Inteligente: El agente puede ahora buscar técnicas específicas (ej: "bruteforce", "pivoting", "persistence") y obtener las plantillas de comandos correspondientes.
+   * Contexto Táctico: Al recibir una petición del usuario, el agente puede buscar en la base de conocimientos de cheatIngestor para proponer comandos exactos y ajustados a la plataforma (Linux/Windows).
+   * Aislamiento y Consistencia: La integración se realizó a través del SystemToolExecutorAdapter, manteniendo el desacoplamiento arquitectónico y utilizando el IngestorUseCase ya existente.
+
+  Ejemplo de interacción:
+
+  > Operador: "Necesito persistencia en esta IP Windows."
+  >
+  > EchoAI: (Usando search_techniques con query 'persistence windows') "He encontrado varias técnicas. Puedes usar la creación de un servicio malicioso (T1543.003). Aquí tienes el comando de ejemplo: sc create
+  [nombre] binPath= [ruta_implante]".
+
+  Validación:
+  Se ha actualizado la suite de pruebas unitarias (test/test_agent_capabilities.py) para verificar que el agente puede invocar correctamente el motor de ingesta y procesar los resultados de búsqueda. Todas las
+  pruebas han pasado satisfactoriamente.
+
+
+✦ He implementado un repositorio de memoria operacional con capacidades RAG (Retrieval-Augmented Generation) para el agente AI, permitiéndole mantener y razonar sobre el contexto específico de una operación.
+
+  Características del Sistema de Memoria (RAG):
+
+   1. Memoria Operacional (OperationalMemory): Se ha creado un nuevo modelo de dominio para almacenar "hallazgos" o "notas" durante una operación (ej: credenciales descubiertas, versiones de software,
+      vulnerabilidades identificadas).
+   2. Mecanismo de Recuperación (Retrieval): Antes de responder a una petición del usuario, el agente ahora realiza una búsqueda semántica (simulada por palabras clave en esta versión) en su repositorio de
+      hallazgos.
+   3. Inyección de Contexto: Si se encuentra información relevante, el agente la inyecta automáticamente en su "pensamiento" antes de generar una respuesta, asegurando que sus consejos estén alineados con los
+      hallazgos previos de la misión.
+   4. Herramienta de Guardado Autónomo (add_to_operational_memory): He dotado al agente con la capacidad de guardar sus propios hallazgos. Si el agente descubre algo importante al ejecutar otra herramienta
+      (como listar procesos o escanear puertos), puede decidir guardarlo en su memoria operacional para el futuro.
+
+  Cambios Técnicos Realizados:
+
+   * Arquitectura Hexagonal: Se añadió el puerto ForOperationalMemoryRepository y el adaptador InMemoryOperationalMemoryAdapter dentro del hexágono agenticLLM.
+   * Actualización del Core: Se modificó AgentUseCase para incluir el paso de recuperación (RAG) en el método ask.
+   * Integración de Herramientas: Se expandió el SystemToolExecutorAdapter para permitir al agente interactuar con su propia memoria.
+   * Validación con TDD: Se creó test/test_agent_rag.py verificando que el agente efectivamente recupera contexto relevante y puede guardar nuevos hallazgos.
+
+  Ejemplo de flujo RAG:
+
+   1. Hallazgo: El agente guarda (vía herramienta): "El servidor 10.0.0.5 tiene una versión vulnerable de OpenSSH".
+   2. Pregunta: El usuario pregunta: "¿Qué estrategia me sugieres para el segmento 10.0.0.0?".
+   3. Acción RAG: El sistema detecta la IP en la memoria, recupera el hallazgo sobre OpenSSH y el agente responde: "Dado que hemos identificado una versión vulnerable de OpenSSH en el 10.0.0.5, sugiero
+      priorizar un exploit de ejecución remota...".
+
+  Esta funcionalidad transforma al agente de un simple consultor de comandos a un analista táctico con memoria persistente de la operación en curso.
+
+
+✦ He implementado un nuevo adaptador para la memoria del agente utilizando HyperDB, proporcionando una base de datos vectorial persistente para el almacenamiento de hallazgos y el contexto de la operación
+  actual.
+
+  Mejoras en el Almacenamiento y Recuperación:
+
+   1. Nuevo Adaptador Vectorial (HyperDBAdapter): He creado el adaptador en agenticLLM/adapters/drivens/HyperDBAdapter.py. A diferencia de la versión anterior en memoria, este adaptador permite:
+       * Búsqueda Semántica: Recuperar información basada en la relevancia del contenido, no solo en palabras clave exactas.
+       * Persistencia en Disco: Los hallazgos de la operación se guardan automáticamente en un archivo (operation_context.pickle.gz), permitiendo que el agente mantenga su memoria incluso después de reiniciar
+         la aplicación.
+   2. Memoria de Operación Robusta: El agente ahora utiliza este repositorio persistente como su fuente de RAG (Retrieval-Augmented Generation). Cada vez que el operador hace una pregunta, el agente consulta a
+      HyperDB para inyectar descubrimientos previos relevantes en su contexto actual.
+   3. Integración Transparente: He actualizado la factoría get_agent_api en agenticLLM/api.py para permitir la selección entre memory_type='in_memory' y memory_type='hyperdb'.
+   4. Validación de Integridad: Se ha desarrollado una suite de pruebas unitarias (test/test_hyperdb_adapter.py) que valida la correcta serialización, guardado y delegación de consultas a la arquitectura
+      vectorial de HyperDB.
+
+  Configuración y Uso:
+
+  Para activar la memoria persistente basada en HyperDB:
+
+   1. Instala la librería: pip install hyperdb-python
+   2. El sistema guardará el contexto en operation_context.pickle.gz por defecto.
+   3. El agente puede ser inicializado programáticamente con:
+
+   1     agent = get_agent_api(memory_type='hyperdb')
+
+  Esta implementación asegura que el EchoMaze AI Agent no solo sea un asistente reactivo, sino que acumule conocimiento estructurado y recuperable durante toda la campaña de explotación, facilitando el
+  análisis de "big picture" sobre el panorama de red del cliente.
+
+✦ He implementado una funcionalidad de Comandos de Inspección Directa en el Agent Dashboard, permitiendo al operador consultar el estado interno, las habilidades y la memoria del agente sin pasar por el
+  procesamiento del LLM.
+
+  Comandos añadidos:
+
+  Ahora puedes escribir los siguientes comandos directamente en el chat del agente:
+
+   1. ?skills: Muestra una lista detallada de todas las habilidades dinámicas registradas (ej: run_ping, run_shell), incluyendo su descripción.
+   2. ?memories: Lista todos los hallazgos y el contexto operacional guardado en la base de datos vectorial (RAG). Muestra el timestamp y el contenido de cada entrada.
+   3. ?tools: Expone todas las herramientas de sistema a las que el agente tiene acceso (incluyendo la API de túneles, topología de red y OpSec).
+
+  Beneficios para el operador:
+
+   * Transparencia: Permite verificar exactamente qué información tiene el agente en su memoria antes de pedirle un análisis.
+   * Depuración: Facilita saber qué herramientas están disponibles y configuradas correctamente.
+   * Rapidez: Proporciona acceso instantáneo a los datos sin esperar a la generación de texto del modelo de IA.
+
+  Estos comandos se interceptan a nivel de interfaz de usuario en UI/frames/agent_frame.py y se inyectan directamente en el historial de la conversación para mantener la trazabilidad de la consulta.
+
+
+                                                                                                                                                                                                 ? for shortcuts
+───────────────────────────────────────────────────────────────────────
+✦ He implementado la integración del agente AI con el sistema de registro y scoring de EchoMaze, permitiendo que sus acciones y descubrimientos sean auditados y puntuados exactamente como los de un operador
+  humano.
+
+  Capacidades de Auditoría y OpSec:
+
+  He dotado al agente con dos nuevas herramientas fundamentales que conectan su actividad autónoma con el motor central del proyecto:
+
+   1. Registro de Acciones (register_action): El agente ahora puede (y debe) registrar cada comando u operación ofensiva que realice.
+       * Identidad Clara: Las acciones se guardan bajo el nombre de operador "EchoAI_Agent".
+       * Impacto en Ruido: Cada acción incluye un noise_score que alimenta el motor de scoring global, permitiendo al operador monitorear si el agente está siendo demasiado "ruidoso" en un segmento de red.
+       * Visibilidad en Dashboard: Estas acciones aparecerán automáticamente en el Admin Dashboard, permitiendo un seguimiento histórico de la lógica del agente.
+
+   2. Registro de Artefactos (register_artifact): Cuando el agente descubre o despliega un archivo (ej: un dump de base de datos, un script de persistencia), puede registrarlo vinculado a una IP.
+       * Persistencia de Evidencias: Los artefactos quedan asociados a la jerarquía de red para futura referencia.
+       * Scoring de Artefactos: El depósito de herramientas conocidas también genera una puntuación de riesgo OpSec que se integra en la evaluación de la IP objetivo.
+
+  Cambios Técnicos Realizados:
+
+   * Modelo de Datos (UI/models.py): Se implementó el método add_action en el GenericModel para facilitar el registro estandarizado de eventos.
+   * Adaptador Agéntico (SystemToolExecutorAdapter): Se añadieron las herramientas al "toolbox" del agente, mapeando sus llamadas a los métodos correspondientes del core.
+   * Validación con TDD: Se creó la suite test/test_agent_logging.py confirmando que el agente puede invocar exitosamente estas funciones y que los datos llegan correctamente al motor de scoring.
+
+  Ejemplo de comportamiento autónomo:
+
+  > EchoAI: "He ejecutado un escaneo de puertos en 10.0.0.1. Voy a registrar esta acción con un score de ruido de 10.5..." ➔ (Llama internamente a register_action(ip='10.0.0.1', command='port_scan',
+  noise_score=10.5))
+  >
+  > Dashboard del Operador: Muestra una nueva entrada en la tabla de acciones: [EchoAI_Agent] | 10.0.0.1 | port_scan | Noise: 10.5.
+
+  Esta mejora garantiza que el agente actúe de forma responsable y que el operador tenga una visión completa del impacto operativo de la IA en el entorno del objetivo.
+
+
+✦ He alineado el comportamiento del agente con la metodología Lockheed Martin Cyber Kill Chain, proporcionando un marco estructurado para sus operaciones de intrusión.
+
+  Características de la Integración Metodológica:
+
+   1. Pensamiento Estructurado: He actualizado el System Prompt del agente para obligarle a seguir las fases oficiales de la Kill Chain (Reconnaissance, Weaponization, Delivery, Exploitation, Installation,
+      Command and Control, y Actions on Objectives) en todos sus razonamientos.
+   2. Seguimiento por Objetivo: El agente ahora rastrea la fase actual de cada IP objetivo de forma independiente. Esto le permite priorizar acciones de reconocimiento en hosts nuevos mientras gestiona el C2
+      en hosts ya comprometidos.
+   3. Nuevas Herramientas de Metodología:
+       * set_cyber_kill_chain_phase: Permite al agente marcar formalmente cuándo un objetivo ha avanzado a una nueva etapa (ej: de Delivery a Exploitation).
+       * get_cyber_kill_chain_status: Permite al agente (y al operador) consultar el historial y el estado actual de la intrusión para una IP específica.
+   4. Memoria Operacional Enriquecida: Los cambios de fase se guardan como hallazgos persistentes en la memoria RAG del agente, permitiéndole generar informes de progreso basados en hitos metodológicos.
+
+  Cambios Técnicos Realizados:
+
+   * Modelos: Se añadió la clase CyberKillChain y se extendió OperationalMemory con el campo phase.
+   * Adaptador de Herramientas: Se implementaron las funciones de gestión de fases en SystemToolExecutorAdapter, vinculándolas con la memoria persistente del agente.
+   * Validación: Se creó test/test_agent_kill_chain.py verificando que el agente puede actualizar y recuperar estados metodológicos correctamente.
+
+  Ejemplo de flujo metodológico:
+
+  > EchoAI: "He detectado un puerto 445 abierto en 10.0.0.10. Según mi metodología, me encuentro en la fase de Reconnaissance. Voy a intentar una enumeración de SMB antes de proceder a Weaponization."
+  >
+  > (El agente ejecuta sus herramientas y, tras tener éxito, llama a set_cyber_kill_chain_phase(ip='10.0.0.10', phase='Exploitation'))
+  >
+  > EchoAI: "Objetivo 10.0.0.10 actualizado a fase Exploitation. Procedo a registrar los artefactos encontrados."
+
+  Esta actualización eleva el nivel del agente de un simple ejecutor de comandos a un analista táctico capaz de reportar y planificar según estándares de la industria.
+

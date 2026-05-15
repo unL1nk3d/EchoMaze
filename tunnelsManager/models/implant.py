@@ -17,3 +17,4 @@ class Implant:
     payload: str = ""
     description: str = ""
     created_at: Optional[str] = None
+    supported_tunnel_type: Optional[str] = None

@@ -473,6 +473,7 @@ class TunnelDB(BaseEntity):
     entropy_score: float
     entropy_warning: str
     data_type: str = "texto plano"
+    implant_id: int = None
 
     @classmethod
     def get_guid(cls):
@@ -482,15 +483,15 @@ class TunnelDB(BaseEntity):
         return (self.source_ip, self.dest_ip, self.local_port, self.remote_port,
                 self.status, self.technique, self.phase, self.tunnel_type,
                 self.data_sent_bytes, self.data_received_bytes, self.last_activity,
-                self.entropy_score, self.entropy_warning, self.data_type)
+                self.entropy_score, self.entropy_warning, self.data_type, self.implant_id)
 
     @classmethod
     def insert(cls):
         return """INSERT INTO tunnels 
             (source_ip, dest_ip, local_port, remote_port, status, technique, phase, 
              tunnel_type, data_sent_bytes, data_received_bytes, last_activity, 
-             entropy_score, entropy_warning, data_type) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+             entropy_score, entropy_warning, data_type, implant_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
 
     @classmethod
     def update(cls):
@@ -498,7 +499,7 @@ class TunnelDB(BaseEntity):
             source_ip=?, dest_ip=?, local_port=?, remote_port=?, status=?, 
             technique=?, phase=?, tunnel_type=?, data_sent_bytes=?, 
             data_received_bytes=?, last_activity=?, entropy_score=?, 
-            entropy_warning=?, data_type=? WHERE id=?"""
+            entropy_warning=?, data_type=?, implant_id=? WHERE id=?"""
 
     @classmethod
     def delete(cls):
@@ -506,15 +507,15 @@ class TunnelDB(BaseEntity):
 
     @classmethod
     def select(cls):
-        return "SELECT id, source_ip, dest_ip, local_port, remote_port, status, technique, phase, tunnel_type, data_sent_bytes, data_received_bytes, last_activity, entropy_score, entropy_warning, data_type FROM tunnels;"
+        return "SELECT id, source_ip, dest_ip, local_port, remote_port, status, technique, phase, tunnel_type, data_sent_bytes, data_received_bytes, last_activity, entropy_score, entropy_warning, data_type, implant_id FROM tunnels;"
 
     @classmethod
     def selectById(cls):
-        return "SELECT id, source_ip, dest_ip, local_port, remote_port, status, technique, phase, tunnel_type, data_sent_bytes, data_received_bytes, last_activity, entropy_score, entropy_warning, data_type FROM tunnels WHERE id = ?;"
+        return "SELECT id, source_ip, dest_ip, local_port, remote_port, status, technique, phase, tunnel_type, data_sent_bytes, data_received_bytes, last_activity, entropy_score, entropy_warning, data_type, implant_id FROM tunnels WHERE id = ?;"
 
     @classmethod
     def selectCoincidence(cls, field):
-        return f"SELECT id, source_ip, dest_ip, local_port, remote_port, status, technique, phase, tunnel_type, data_sent_bytes, data_received_bytes, last_activity, entropy_score, entropy_warning, data_type FROM tunnels WHERE {field} = ?;"
+        return f"SELECT id, source_ip, dest_ip, local_port, remote_port, status, technique, phase, tunnel_type, data_sent_bytes, data_received_bytes, last_activity, entropy_score, entropy_warning, data_type, implant_id FROM tunnels WHERE {field} = ?;"
 
     @classmethod
     def create_table(cls):
@@ -533,7 +534,9 @@ class TunnelDB(BaseEntity):
             last_activity TEXT,
             entropy_score REAL DEFAULT 0.0,
             entropy_warning TEXT,
-            data_type TEXT DEFAULT 'texto plano'
+            data_type TEXT DEFAULT 'texto plano',
+            implant_id INTEGER,
+            FOREIGN KEY(implant_id) REFERENCES implants(id)
         );"""
 
 @dataclass
@@ -547,24 +550,25 @@ class ImplantDB(BaseEntity):
     payload: str
     description: str
     created_at: str
+    supported_tunnel_type: str = None
 
     @classmethod
     def get_guid(cls):
         return "id"
 
     def exportAsTupple(self):
-        return (self.name, self.implant_type, self.payload, self.description, self.created_at)
+        return (self.name, self.implant_type, self.payload, self.description, self.created_at, self.supported_tunnel_type)
 
     @classmethod
     def insert(cls):
         return """INSERT INTO implants 
-            (name, implant_type, payload, description, created_at) 
-            VALUES (?, ?, ?, ?, ?)"""
+            (name, implant_type, payload, description, created_at, supported_tunnel_type) 
+            VALUES (?, ?, ?, ?, ?, ?)"""
 
     @classmethod
     def update(cls):
         return """UPDATE implants SET 
-            name=?, implant_type=?, payload=?, description=?, created_at=? 
+            name=?, implant_type=?, payload=?, description=?, created_at=?, supported_tunnel_type=? 
             WHERE id=?"""
 
     @classmethod
@@ -573,15 +577,15 @@ class ImplantDB(BaseEntity):
 
     @classmethod
     def select(cls):
-        return "SELECT * FROM implants;"
+        return "SELECT id, name, implant_type, payload, description, created_at, supported_tunnel_type FROM implants;"
 
     @classmethod
     def selectById(cls):
-        return "SELECT * FROM implants WHERE id = ?;"
+        return "SELECT id, name, implant_type, payload, description, created_at, supported_tunnel_type FROM implants WHERE id = ?;"
 
     @classmethod
     def selectCoincidence(cls, field):
-        return f"SELECT * FROM implants WHERE {field} = ?;"
+        return f"SELECT id, name, implant_type, payload, description, created_at, supported_tunnel_type FROM implants WHERE {field} = ?;"
 
     @classmethod
     def create_table(cls):
@@ -591,7 +595,8 @@ class ImplantDB(BaseEntity):
             implant_type TEXT,
             payload TEXT,
             description TEXT,
-            created_at TIMESTAMP DEFAULT (datetime('now'))
+            created_at TIMESTAMP DEFAULT (datetime('now')),
+            supported_tunnel_type TEXT
         );"""
 
 class Templates(BaseEntity):

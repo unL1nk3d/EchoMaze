@@ -16,7 +16,7 @@ class TunnelsDashboardFrame(Frame):
             reduce_cpu=True
         )
         self.model = model
-        self.tunnels_usecase = model.tunnels
+        self.tunnels_usecase = model.tunnels_usecase
         self._options_visible = False
 
         self.stats_label = Label("")
@@ -43,6 +43,13 @@ class TunnelsDashboardFrame(Frame):
             options=[(t, t) for t in Tunnel.ALLOWED_TYPES],
             label="Type:",
             name="tunnel_type"
+        )
+        self.implant_list = ListBox(
+            height=4,
+            options=[("None", None)],
+            label="Linked Implant:",
+            name="implant_id",
+            on_select=self._on_implant_select
         )
 
         self._rebuild_layout()
@@ -72,13 +79,14 @@ class TunnelsDashboardFrame(Frame):
             self.add_layout(layout_options_title)
             layout_options_title.add_widget(Label("--- ADVANCED OPTIONS (O to hide) ---"))
 
-            layout_policy = Layout([33, 33, 33])
+            layout_policy = Layout([25, 25, 25, 25])
             self.add_layout(layout_policy)
             layout_policy.add_widget(self.check_interval_text, 0)
             layout_policy.add_widget(self.technique_list, 1)
             layout_policy.add_widget(self.type_list, 2)
+            layout_policy.add_widget(self.implant_list, 3)
 
-            layout_adv_buttons = Layout([1, 1, 1, 1, 1, 1])
+            layout_adv_buttons = Layout([1, 1, 1, 1, 1, 1, 1])
             self.add_layout(layout_adv_buttons)
             layout_adv_buttons.add_widget(Button("Set Policy", self._set_policy), 0)
             layout_adv_buttons.add_widget(Button("Set Tech", self._set_technique), 1)
@@ -86,6 +94,7 @@ class TunnelsDashboardFrame(Frame):
             layout_adv_buttons.add_widget(Button("Sim Transf", self._simulate_transfer), 3)
             layout_adv_buttons.add_widget(Button("Activating", self._set_activating), 4)
             layout_adv_buttons.add_widget(Button("Send Beacon", self._send_beacon), 5)
+            layout_adv_buttons.add_widget(Button("Link", self._link_implant), 6)
 
         layout_buttons = Layout([1, 1, 1, 1, 1, 1, 1])
         self.add_layout(layout_buttons)
@@ -204,6 +213,21 @@ class TunnelsDashboardFrame(Frame):
             options.append((desc, t.id))
 
         self.tunnels_list.options = options
+        
+        # Populate implant list
+        implants = self.model.implants_usecase.list_implants()
+        implant_options = [("None", None)]
+        for i in implants:
+            tunnel_info = f" ({i.supported_tunnel_type})" if i.supported_tunnel_type else ""
+            implant_options.append((f"{i.name}{tunnel_info}", i.id))
+        self.implant_list.options = implant_options
+
+    def _on_implant_select(self):
+        selected_implant_id = self.implant_list.value
+        if selected_implant_id is not None:
+            implant = self.model.implants_usecase.get_implant(selected_implant_id)
+            if implant and implant.supported_tunnel_type:
+                self.type_list.value = implant.supported_tunnel_type
 
     def _evaluate_entropy(self):
         selected_id = self.tunnels_list.value
@@ -278,6 +302,14 @@ class TunnelsDashboardFrame(Frame):
             self._scene.add_effect(PopUpDialog(self._screen, msg, ["OK"]))
             self._refresh_data()
 
+    def _link_implant(self):
+        selected_tunnel_id = self.tunnels_list.value
+        selected_implant_id = self.implant_list.value
+        if selected_tunnel_id is not None:
+            self.tunnels_usecase.link_tunnel_to_implant(selected_tunnel_id, selected_implant_id)
+            self._scene.add_effect(PopUpDialog(self._screen, f"Tunnel {selected_tunnel_id} linked to Implant {selected_implant_id}", ["OK"]))
+            self._refresh_data()
+
     def _add_tunnel(self):
         self.save()
         data = self.data
@@ -286,11 +318,12 @@ class TunnelsDashboardFrame(Frame):
         dest_ip = data.get("dest_ip")
         remote_p = data.get("remote_port")
         t_type = data.get("tunnel_type")
+        imp_id = data.get("implant_id")
 
         if src_ip and local_p and local_p.isdigit():
             lp = int(local_p)
             rp = int(remote_p) if remote_p and remote_p.isdigit() else None
-            self.tunnels_usecase.create_tunnel(src_ip, lp, dest_ip, rp, tunnel_type=t_type)
+            self.tunnels_usecase.create_tunnel(src_ip, lp, dest_ip, rp, tunnel_type=t_type, implant_id=imp_id)
             # Clear fields after successful addition
             self.source_ip_text.value = ""
             self.local_port_text.value = ""
@@ -310,6 +343,7 @@ class TunnelsDashboardFrame(Frame):
                 if t.id == selected_id:
                     self.technique_list.value = t.technique
                     self.type_list.value = t.tunnel_type
+                    self.implant_list.value = t.implant_id
                     break
 
     def _close(self):

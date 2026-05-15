@@ -3,7 +3,7 @@ from tunnelsManager.models.tunnel import Tunnel
 
 class ForTunnelCreation(ABC):
     @abstractmethod
-    def create_tunnel(self, source_ip: str, local_port: int, dest_ip: str = None, remote_port: int = None, tunnel_type: str = Tunnel.TYPE_HTTP, data_type: str = None) -> Tunnel:
+    def create_tunnel(self, source_ip: str, local_port: int, dest_ip: str = None, remote_port: int = None, tunnel_type: str = Tunnel.TYPE_HTTP, data_type: str = None, implant_id: int = None) -> Tunnel:
         """Phase 1: Tunnel Creation. Crea y registra un nuevo túnel en el sistema."""
         pass
 

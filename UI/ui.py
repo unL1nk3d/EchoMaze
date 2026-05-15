@@ -8,6 +8,7 @@ from UI.frames.SuggestionsFrame import SuggestionsFrame
 from UI.frames.TerminalFrame import TerminalFrame
 from UI.frames.tunnels_frame import TunnelsDashboardFrame
 from UI.frames.implants_frame import ImplantsDashboardFrame
+from UI.frames.agent_frame import AgentDashboardFrame
 from UI.models import UIMapper,GenericModel,RepositoryModel
 from UI.opsec_panel import OpSecPanel
 from asciimatics.scene import Scene
@@ -39,7 +40,8 @@ def demo(screen,model):
         Scene([AdminDashboardFrame(screen, model)], -1, name="admin"),
         Scene([ArtifactsFrame(screen, model)], -1, name="artifacts"),
         Scene([TunnelsDashboardFrame(screen, model)], -1, name="tunnels"),
-        Scene([ImplantsDashboardFrame(screen, model)], -1, name="implants")
+        Scene([ImplantsDashboardFrame(screen, model)], -1, name="implants"),
+        Scene([AgentDashboardFrame(screen, model)], -1, name="agent")
     ]
     screen.play(scenes, stop_on_resize=True, start_scene=scenes[0])
 

@@ -73,6 +73,7 @@ class Tunnel:
     entropy_score: float = 0.0
     entropy_warning: str = "No evaluation yet"
     data_type: str = "texto plano"
+    implant_id: Optional[int] = None
 
     @property
     def is_hanging(self) -> bool:

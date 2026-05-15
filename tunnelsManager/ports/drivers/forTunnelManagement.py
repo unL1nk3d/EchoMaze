@@ -57,3 +57,8 @@ class ForTunnelManagement(ABC):
     def process_implant_beacon(self, tunnel_id: int) -> bool:
         """Procesa un beacon recibido de un implante para un túnel específico."""
         pass
+
+    @abstractmethod
+    def link_tunnel_to_implant(self, tunnel_id: int, implant_id: int) -> bool:
+        """Liga un túnel existente con un implante específico."""
+        pass

@@ -83,9 +83,9 @@ class TreeIPFrame(Frame, Observer):
         layout_header = Layout([1], fill_frame=False)
         self.add_layout(layout_header)
         layout_header.add_widget(Label("=== IP Hierarchy Tree Browser ==="))
-        help_text = "↑/↓: Nav | →: Exp | ←: Coll | R: Reload | T: Theme | A: Artifacts | Q: Quit"
+        help_text = "↑/↓: Nav | →: Exp | ←: Coll | R: Reload | T: Theme | A: Artif | L: AI | Q: Quit"
         if self.model.is_admin:
-            help_text = "↑/↓: Nav | →: Exp | ←: Coll | R: Reload | T: Theme | A: Artifacts | D: Dash | Q: Quit"
+            help_text = "↑/↓: Nav | →: Exp | ←: Coll | R: Reload | T: Theme | A: Artif | L: AI | D: Dash | Q: Quit"
         layout_header.add_widget(Label(help_text))
         layout_header.add_widget(Divider())
 
@@ -504,6 +504,8 @@ class TreeIPFrame(Frame, Observer):
                raise NextScene("tunnels")
             elif event.key_code in [ord('P'), ord('p')]:
                raise NextScene("implants")
+            elif event.key_code in [ord('L'), ord('l')]:
+               raise NextScene("agent")
             elif event.key_code == ord('j'):
                 self._show_suggestions()
                 return None

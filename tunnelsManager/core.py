@@ -14,7 +14,7 @@ class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics
         self.connection_tester = connection_tester
         self.check_interval = 60 # Default interval in seconds
 
-    def create_tunnel(self, source_ip: str, local_port: int, dest_ip: str = None, remote_port: int = None, tunnel_type: str = Tunnel.TYPE_HTTP, data_type: str = None) -> Tunnel:
+    def create_tunnel(self, source_ip: str, local_port: int, dest_ip: str = None, remote_port: int = None, tunnel_type: str = Tunnel.TYPE_HTTP, data_type: str = None, implant_id: int = None) -> Tunnel:
         # Check if local port is actually open/available, but we save it anyway for tracking
         is_open = self.connection_tester.test_local_port_open(local_port)
         status = Tunnel.STATUS_ACTIVE if is_open else Tunnel.STATUS_DISCONNECTED
@@ -33,7 +33,8 @@ class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics
             last_activity=None,
             entropy_score=0.0,
             entropy_warning="Pending evaluation",
-            data_type=data_type
+            data_type=data_type,
+            implant_id=implant_id
         )
         return self.repository.save_tunnel(tunnel)
 
@@ -250,4 +251,12 @@ class TunnelsUseCase(ForTunnelCreation, ForTunnelManagement, ForTunnelStadistics
                         t.status = Tunnel.STATUS_ACTIVE
                         self.repository.save_tunnel(t)
                     return True
+        return False
+
+    def link_tunnel_to_implant(self, tunnel_id: int, implant_id: int) -> bool:
+        tunnel = self.repository.get_tunnel(tunnel_id)
+        if tunnel:
+            tunnel.implant_id = implant_id
+            self.repository.save_tunnel(tunnel)
+            return True
         return False
