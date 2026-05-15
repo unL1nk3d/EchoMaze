@@ -1649,3 +1649,19 @@ que haya una API expuesta que pueda consumir para consultar todas las funciones 
   Las pruebas de verificación pueden ejecutarse con:
   python -m unittest test/test_tunnel_entropy_data_type.py
 
+
+✦ He actualizado la interfaz del Tunnel Dashboard para mejorar la visualización de la evaluación de entropía, cumpliendo con la historia de usuario solicitada.
+
+  Cambios realizados:
+
+   1. Evaluación en Ventana Emergente: He modificado el método _evaluate_entropy en UI/frames/tunnels_frame.py para que, al pulsar el botón "Eval Ent", los resultados detallados (Puntuación de Entropía, Tipo
+      de Dato del Portador y Evaluación) se muestren en un cuadro de diálogo (PopUpDialog). Esto permite al operador obtener la información completa sin saturar la vista principal.
+   2. Limpieza del Panel Principal: Se ha simplificado la representación de los túneles en la lista principal (ListBox). He eliminado la cadena de texto que mostraba las métricas de transferencia de datos y
+      los scores de entropía de forma permanente. Ahora, el panel principal muestra únicamente la información esencial del túnel (ID, IPs, Puertos, Tipo, Estado y Fase), manteniendo la interfaz limpia y
+      profesional.
+   3. Verificación: Se han ejecutado los tests existentes en UI/tests/test_tunnels_frame.py, confirmando que la lógica de la interfaz sigue funcionando correctamente tras las modificaciones.
+
+  Resultado visual:
+
+   * Antes: La lista de túneles contenía múltiples métricas (S:0B R:0B | E:0.0 ...) que dificultaban la lectura rápida.
+   * Ahora: La lista es más compacta y legible. El operador solo ve el detalle de entropía cuando decide evaluarlo explícitamente mediante el botón correspondiente.

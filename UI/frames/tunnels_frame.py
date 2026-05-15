@@ -291,6 +291,9 @@ class TunnelsDashboardFrame(Frame):
             lp = int(local_p)
             rp = int(remote_p) if remote_p and remote_p.isdigit() else None
             self.tunnels_usecase.create_tunnel(src_ip, lp, dest_ip, rp, tunnel_type=t_type)
+            # Clear fields after successful addition
+            self.source_ip_text.value = ""
+            self.local_port_text.value = ""
             self._refresh_data()
 
     def _delete_tunnel(self):
