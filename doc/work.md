@@ -1936,3 +1936,81 @@ que haya una API expuesta que pueda consumir para consultar todas las funciones 
 
   Esta actualización eleva el nivel del agente de un simple ejecutor de comandos a un analista táctico capaz de reportar y planificar según estándares de la industria.
 
+✦ He implementado con éxito el adaptador para Ollama, permitiendo que EchoMaze utilice modelos locales a través de su API. Los cambios siguen la arquitectura de puertos y adaptadores del proyecto.
+
+  Resumen de cambios:
+   1. Nuevo Adaptador: Se creó agenticLLM/adapters/drivens/OllamaAdapter.py, que implementa la interfaz ForLLMProvider. Este adaptador maneja la conversión de mensajes al formato de Ollama y soporta la
+      detección básica de llamadas a herramientas (tools) para modelos compatibles como llama3.1.
+   2. Integración en la API: Se actualizó la factoría get_agent_api en agenticLLM/api.py para incluir el tipo de proveedor ollama.
+   3. Pruebas Unitarias: Se añadió test/test_ollama_adapter.py para verificar que el adaptador procesa correctamente las respuestas y las llamadas a funciones, utilizando mocks para evitar dependencias
+      externas durante los tests.
+   4. Documentación: Se actualizó el README.md de agenticLLM con instrucciones detalladas sobre cómo configurar y utilizar el nuevo proveedor.
+
+  Cómo usarlo:
+  Para activar el agente con Ollama, puedes configurar las siguientes variables de entorno (opcional) y llamar a la API:
+
+   1 # Ejemplo de uso
+   2 from agenticLLM import get_agent_api
+   3
+   4 # Inicializa con el proveedor 'ollama'
+   5 agent = get_agent_api(provider_type='ollama')
+   6
+   7 # El adaptador usará 'llama3.1' por defecto o el valor de OLLAMA_MODEL
+   8 response = agent.ask("¿Cuál es el estado actual de la red?")
+   9 print(response)
+
+  Variables de entorno soportadas:
+   - OLLAMA_MODEL: Nombre del modelo a usar (por defecto: llama3.1).
+   - OLLAMA_BASE_URL: URL del servidor Ollama (por defecto: http://localhost:11434).
+
+
+✦ He implementado con éxito el adaptador para Ollama y el subcomando agent en launch.py para configurar el proveedor de LLM y RAG.
+
+  Cambios realizados:
+
+   1. Adaptador Ollama:
+       * Se creó agenticLLM/adapters/drivens/OllamaAdapter.py utilizando únicamente librerías estándar (urllib.request) para evitar dependencias externas.
+       * Soporta generación de respuestas y mapeo de llamadas a herramientas (function calling) para modelos compatibles con la API de chat de Ollama.
+       * Se verificó su funcionamiento mediante un nuevo archivo de pruebas: test/test_ollama_adapter.py.
+
+   2. Integración en launch.py:
+       * Se añadió el subcomando agent que permite configurar:
+           * --provider: Seleccionar entre mock, llamacpp u ollama.
+           * --memory: Seleccionar el tipo de RAG (in_memory o hyperdb).
+           * --ask: Realizar una consulta directa al agente desde la línea de comandos.
+           * --ui: Iniciar la interfaz gráfica utilizando la configuración de agente especificada.
+       * Se actualizó build_core_stack para inyectar dinámicamente estas configuraciones en el agente.
+
+  Ejemplos de uso:
+
+  Consultar al agente desde la terminal usando Ollama:
+
+   1 python launch.py agent --provider ollama --ask "Analiza la red actual"
+
+  Iniciar la UI configurando el agente para usar Ollama y memoria persistente (HyperDB):
+
+   1 python launch.py agent --provider ollama --memory hyperdb --ui
+
+  Ver la ayuda del nuevo subcomando:
+   1 python launch.py agent --help
+
+  El sistema ahora es más flexible, permitiendo a los operadores cambiar entre modelos locales (LlamaCPP/Ollama) y diferentes estrategias de memoria operativa según sus necesidades.
+
+✦ He realizado una reestructuración profunda del "hexágono" para que el soporte de ReAct y el acceso a Skills sean nativos y uniformes en todos los adaptadores:
+
+  Cambios Arquitecturales:
+   1. Clase Base Unificada (BaseLLMAdapter): He creado una nueva clase base en agenticLLM/adapters/drivens/BaseLLMAdapter.py que centraliza toda la lógica de ReAct. Esto significa que cualquier adaptador de
+      LLM que herede de esta clase gana automáticamente la capacidad de usar herramientas mediante el patrón ReAct.
+   2. Soporte de Skills Transparente: Al integrar la lógica en la base, he asegurado que la lista de herramientas que recibe el adaptador incluya tanto las funciones del sistema como las Skills dinámicas,
+      tratándolas de forma idéntica.
+   3. Refactor de Adaptadores Específicos: He actualizado OllamaAdapter, LlamaCppAdapter y MockLLMAdapter para que hereden de la nueva base. Ahora, el modo ReAct se activa simplemente pasando un parámetro al
+      constructor, sin necesidad de wrappers externos.
+   4. Simplificación de la Composición: He limpiado agenticLLM/api.py eliminando lógica redundante. La decisión de usar ReAct o herramientas nativas ahora fluye de forma natural a través de la jerarquía de
+      clases.
+
+  Beneficios:
+   - Consistencia: Todos los modelos (locales vía llama-cpp, locales vía Ollama o mocks) se comportan exactamente igual respecto a las herramientas y habilidades.
+   - Robustez: La lógica de parseo de JSON y el manejo de prompts ReAct está en un solo lugar, facilitando futuras mejoras.
+   - Flexibilidad: Puedes intercambiar modelos y proveedores sabiendo que las habilidades del agente se mantendrán funcionales.
+
+  ¡El sistema ahora es mucho más modular y fiel a los principios de arquitectura limpia!

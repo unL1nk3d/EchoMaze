@@ -20,7 +20,7 @@ from auth.composition_root import bootstrap_auth
 from auth.adapters.drivers.passwordAuthenticator import PasswordCredential
 import getpass
 
-def build_core_stack(session_manager=None):
+def build_core_stack(session_manager=None, agent_provider=None, agent_memory='in_memory', agent_use_react=False):
     dao = GenericDAO()
     crud = CRUD_GATHERINGDB(dao)
     core = Core(crud, PORT_SERVICE_MAP)
@@ -51,9 +51,13 @@ def build_core_stack(session_manager=None):
     tunnels_usecase = TunnelsUseCase(tunnels_repo, connection_tester)
     implants_usecase = ImplantsUseCase(implants_repo)
     tunnels_api = get_tunnels_api(dao)
-    # Initialize agent without generic first to avoid circular ref in constructor if needed,
-    # but get_agent_api now takes it. Let's see.
-    agent_usecase = get_agent_api(tunnels_api=tunnels_api)
+    # Initialize agent with specified provider and memory
+    agent_usecase = get_agent_api(
+        tunnels_api=tunnels_api, 
+        provider_type=agent_provider, 
+        memory_type=agent_memory,
+        use_react=agent_use_react
+    )
 
     generic = GenericModel(
         repository=core, 
@@ -284,13 +288,31 @@ Examples:
     ingest_parser.add_argument('--drop', action='store_true', help='Drop all data saved on the database')
     ingest_parser.add_argument('--list', action='store_true', help='List all templates saved on the database')
     
+    # agent subcommand
+    agent_parser = subparsers.add_parser('agent', help='Configure and interact with the AI agent')
+    agent_parser.add_argument('--provider', choices=['mock', 'llamacpp', 'ollama'], default=os.getenv("AGENT_PROVIDER", "mock"), help='LLM provider (default: mock)')
+    agent_parser.add_argument('--memory', choices=['in_memory', 'hyperdb'], default=os.getenv("AGENT_MEMORY", "in_memory"), help='RAG memory type (default: in_memory)')
+    agent_parser.add_argument('--react', action='store_true', help='Force ReAct mode (manual tool parsing from text)')
+    agent_parser.add_argument('--ask', type=str, help='Ask a question to the agent')
+    agent_parser.add_argument('--ui', action='store_true', help='Launch UI with this agent configuration')
+
     args = parser.parse_args(argv)
+
+    # Determine agent configuration
+    agent_provider = os.getenv("AGENT_PROVIDER", "mock")
+    agent_memory = os.getenv("AGENT_MEMORY", "in_memory")
+    agent_use_react = os.getenv("AGENT_USE_REACT", "false").lower() == "true"
+    
+    if args.command == 'agent':
+        agent_provider = args.provider
+        agent_memory = args.memory
+        agent_use_react = args.react or agent_use_react
 
     # Build authentication infrastructure first
     iam, password_auth, session_manager = bootstrap_auth()
 
     # Build core infrastructure and inject session_manager
-    dao, crud, core, cmd, generic, cli_ingestor, auto, repository, scoring_engine = build_core_stack(session_manager)
+    dao, crud, core, cmd, generic, cli_ingestor, auto, repository, scoring_engine = build_core_stack(session_manager, agent_provider, agent_memory, agent_use_react)
 
     # Initial setup if needed
     handle_initial_setup(iam)
@@ -328,7 +350,7 @@ Examples:
         handle_reload_directory(cmd)
     
     # Run UI
-    if args.ui:
+    if args.ui or (args.command == 'agent' and args.ui):
         # Require login for UI as per specs
         if not session_manager.is_authenticated():
              if not handle_login(iam, password_auth, session_manager):
@@ -357,6 +379,14 @@ Examples:
 
     # ===== Handle subcommands =====
     
+    # agent subcommand interaction
+    if args.command == 'agent':
+        if args.ask:
+            check_restriction()
+            print(f"[*] Agent ({agent_provider}, RAG: {agent_memory}) is thinking...")
+            response = generic.agent_usecase.ask(args.ask)
+            print(f"\n[Agent]: {response}")
+
     # register subcommand
     if args.command == 'register':
         if not session_manager.is_authenticated():

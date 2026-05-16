@@ -3,6 +3,7 @@ from asciimatics.exceptions import NextScene
 from asciimatics.screen import Screen
 from asciimatics.event import KeyboardEvent
 from agenticLLM.models.agent import Message
+import threading
 
 class AgentDashboardFrame(Frame):
     def __init__(self, screen: Screen, model):
@@ -16,9 +17,12 @@ class AgentDashboardFrame(Frame):
         )
         self.model = model
         self.agent = model.agent_usecase
+        self._is_thinking = False
+        self._pending_response = None
+        self._thinking_animation_count = 0
 
         self.history_text = TextBox(height=15, label="Conversation:", name="history", as_string=True, line_wrap=True)
-        self.history_text.disabled = True
+        self.history_text.readonly = True
         
         self.input_text = Text(label="Ask AI:", name="user_input")
         
@@ -45,7 +49,24 @@ class AgentDashboardFrame(Frame):
 
         self.fix()
 
+    def process_event(self, event):
+        # Polling check for background response
+        if self._is_thinking and self._pending_response is not None:
+            response = self._pending_response
+            self._pending_response = None
+            self._is_thinking = False
+            
+            if "[WAITING_FOR_APPROVAL]" in response:
+                self._ask_for_approval()
+            
+            self._refresh_history()
+            
+        return super(AgentDashboardFrame, self).process_event(event)
+
     def _send_query(self):
+        if self._is_thinking:
+            return
+
         self.save()
         user_query = self.data.get("user_input")
         if user_query:
@@ -57,12 +78,27 @@ class AgentDashboardFrame(Frame):
                 self._refresh_history()
                 return
 
-            response = self.agent.ask(user_query)
+            # Start thinking in background
+            self._is_thinking = True
+            self._pending_response = None
             
-            if "[WAITING_FOR_APPROVAL]" in response:
-                self._ask_for_approval()
-            
+            # Add a placeholder for "thinking"
+            self.agent.state.history.append(Message(role="user", content=user_query))
             self._refresh_history()
+            self.history_text.value += "[EchoAI]: Thinking...\n\n"
+
+            def _background_ask():
+                try:
+                    # Note: We skip the first ask() logic here because we already added the user message
+                    # and we don't want to duplicate RAG logic. 
+                    # But actually, ask() handles RAG and history. Let's use ask() but revert the manual append.
+                    self.agent.state.history.pop() 
+                    response = self.agent.ask(user_query)
+                    self._pending_response = response
+                except Exception as e:
+                    self._pending_response = f"Error: {str(e)}"
+
+            threading.Thread(target=_background_ask, daemon=True).start()
         else:
             self._scene.add_effect(PopUpDialog(self._screen, "Please enter a query", ["OK"]))
 

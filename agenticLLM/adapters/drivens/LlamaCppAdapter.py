@@ -4,11 +4,14 @@ from agenticLLM.ports.drivens.forLLMAndTools import ForLLMProvider
 import os
 import json
 
-class LlamaCppAdapter(ForLLMProvider):
+from agenticLLM.adapters.drivens.BaseLLMAdapter import BaseLLMAdapter
+
+class LlamaCppAdapter(BaseLLMAdapter):
     """
     Adapter for llama-cpp-python to run models like DeepSeek locally.
     """
-    def __init__(self, model_path: str, n_ctx: int = 4096):
+    def __init__(self, model_path: str, n_ctx: int = 4096, use_react: bool = False):
+        super().__init__(use_react=use_react)
         try:
             from llama_cpp import Llama
         except ImportError:
@@ -26,7 +29,7 @@ class LlamaCppAdapter(ForLLMProvider):
             n_gpu_layers=-1 # Use GPU if available
         )
 
-    def generate_response(self, messages: List[Message], tools: List[Tool]) -> Message:
+    def _get_internal_response(self, messages: List[Message], tools: List[Tool]) -> Message:
         # Convert domain messages to llama-cpp format (ChatML or similar)
         # DeepSeek Instruct usually likes:
         # User: {prompt}\n\nAssistant:
