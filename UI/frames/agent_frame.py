@@ -1,4 +1,4 @@
-from asciimatics.widgets import Frame, Layout, ListBox, Button, Label, TextBox, Text, PopUpDialog, Widget, Divider
+from asciimatics.widgets import Frame, Layout, ListBox, Button, Label, TextBox, Text, PopUpDialog, Widget, Divider, DropdownList, CheckBox
 from asciimatics.exceptions import NextScene
 from asciimatics.screen import Screen
 from asciimatics.event import KeyboardEvent
@@ -21,17 +21,34 @@ class AgentDashboardFrame(Frame):
         self._pending_response = None
         self._thinking_animation_count = 0
 
-        self.history_text = TextBox(height=15, label="Conversation:", name="history", as_string=True, line_wrap=True)
+        self.history_text = TextBox(height=13, label="Conversation:", name="history", as_string=True, line_wrap=True)
         self.history_text.readonly = True
         
         self.input_text = Text(label="Ask AI:", name="user_input")
         
+        # Model Configuration Widgets
+        self.model_dropdown = DropdownList(
+            [("Default", "default")],
+            label="Ollama Model:",
+            name="ollama_model",
+            on_change=self._on_model_change
+        )
+        self.react_checkbox = CheckBox("Use ReAct Mode", name="use_react", on_change=self._on_react_change)
+        
         self._rebuild_layout()
         self._refresh_history()
+        self._load_available_models()
 
     def _rebuild_layout(self):
         self._layouts = []
         
+        layout_config = Layout([70, 30])
+        self.add_layout(layout_config)
+        layout_config.add_widget(self.model_dropdown, 0)
+        layout_config.add_widget(self.react_checkbox, 1)
+        layout_config.add_widget(Divider(), 0)
+        layout_config.add_widget(Divider(), 1)
+
         layout_history = Layout([100])
         self.add_layout(layout_history)
         layout_history.add_widget(self.history_text)
@@ -48,6 +65,50 @@ class AgentDashboardFrame(Frame):
         layout_buttons.add_widget(Button("Close", self._close), 1)
 
         self.fix()
+
+    def _load_available_models(self):
+        # Only relevant for Ollama
+        from agenticLLM.adapters.drivens.OllamaAdapter import OllamaAdapter
+        
+        # We need to find the actual OllamaAdapter if it's wrapped or in the chain
+        adapter = self.agent.llm
+        while hasattr(adapter, 'inner_provider'):
+             adapter = adapter.inner_provider
+             
+        if isinstance(adapter, OllamaAdapter):
+            models = adapter.list_available_models()
+            if models:
+                options = [(m, m) for m in models]
+                self.model_dropdown.options = options
+                # Select current model if possible
+                if adapter.model_name in models:
+                    self.model_dropdown.value = adapter.model_name
+            
+            # Sync ReAct checkbox
+            main_adapter = self.agent.llm
+            self.react_checkbox.value = getattr(main_adapter, 'use_react', False)
+
+    def _on_model_change(self):
+        self.save()
+        new_model = self.data.get("ollama_model")
+        if not new_model: return
+        
+        from agenticLLM.adapters.drivens.OllamaAdapter import OllamaAdapter
+        adapter = self.agent.llm
+        while hasattr(adapter, 'inner_provider'):
+             adapter = adapter.inner_provider
+             
+        if isinstance(adapter, OllamaAdapter):
+            adapter.model_name = new_model
+
+    def _on_react_change(self):
+        self.save()
+        use_react = self.data.get("use_react")
+        
+        # Update the adapter
+        adapter = self.agent.llm
+        if hasattr(adapter, 'use_react'):
+            adapter.use_react = use_react
 
     def process_event(self, event):
         # Polling check for background response

@@ -105,3 +105,16 @@ class OllamaAdapter(BaseLLMAdapter):
             return Message(role="assistant", content=f"Error connecting to Ollama at {self.base_url}: {e}")
         except Exception as e:
             return Message(role="assistant", content=f"Unexpected error calling Ollama: {e}")
+
+    def list_available_models(self) -> List[str]:
+        """Queries the Ollama API for a list of locally installed models."""
+        base_url = self.base_url.rstrip('/')
+        url = f"{base_url}/api/tags"
+        try:
+            with urllib.request.urlopen(url) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                models = res_data.get('models', [])
+                return [m['name'] for m in models]
+        except Exception as e:
+            # We don't want to crash the UI if Ollama is down here
+            return []

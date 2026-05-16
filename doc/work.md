@@ -2014,3 +2014,17 @@ que haya una API expuesta que pueda consumir para consultar todas las funciones 
    - Flexibilidad: Puedes intercambiar modelos y proveedores sabiendo que las habilidades del agente se mantendrán funcionales.
 
   ¡El sistema ahora es mucho más modular y fiel a los principios de arquitectura limpia!
+
+
+  
+✦ He implementado la funcionalidad para que puedas cambiar dinámicamente el modelo de Ollama directamente desde la interfaz de usuario (TUI).
+
+  Mejoras realizadas:
+   1. Detección Automática de Modelos: He añadido una función al adaptador de Ollama que consulta tu instancia local y obtiene la lista de todos los modelos que has descargado (llama3.1, codellama,
+      deepseek-r1, etc.).
+   2. Selector en la TUI: Ahora, en el panel del Agente (EchoMaze AI Agent), verás un nuevo menú desplegable llamado "Ollama Model:". Este menú se llena automáticamente con tus modelos instalados.
+   3. Configuración en Caliente: Puedes cambiar de modelo en mitad de una sesión. El agente comenzará a usar el nuevo modelo seleccionado para la siguiente pregunta sin necesidad de reiniciar la aplicación.
+   4. Control de ReAct: También he añadido un checkbox "Use ReAct Mode" en la interfaz. Esto te permite activar o desactivar el subsistema de herramientas manuales en tiempo real, dependiendo de si el modelo
+      que has seleccionado soporta herramientas nativas o no.
+
+  ¡Ahora tienes control total sobre qué cerebro usa EchoMaze para sus operaciones de pentesting!
