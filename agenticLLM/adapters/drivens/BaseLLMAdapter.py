@@ -63,18 +63,26 @@ Wait for the tool output before continuing. If you have the final answer, just r
 """
 
     def _inject_instructions(self, messages: List[Message], instructions: str) -> List[Message]:
-        new_messages = [msg for msg in messages]
+        # For ReAct, we also need to ensure all 'tool' messages are converted to 'user' messages
+        # because the LLM won't understand the 'tool' role without native tool support.
+        new_messages = []
+        for msg in messages:
+            if msg.role == "tool":
+                # Convert tool output to a user message for the LLM
+                new_messages.append(Message(role="user", content=f"[TOOL OUTPUT from {msg.name}]:\n{msg.content}"))
+            else:
+                new_messages.append(Message(role=msg.role, content=msg.content, tool_call_id=msg.tool_call_id, name=msg.name, tool_arguments=msg.tool_arguments))
         
         # Find system message or add it
-        system_msg = next((m for m in new_messages if m.role == "system"), None)
-        if system_msg:
-            # Create a new message to avoid mutating the original history objects if shared
-            system_msg = Message(role="system", content=system_msg.content + f"\n\n{instructions}")
-            # Replace in our local copy
-            for i, m in enumerate(new_messages):
-                if m.role == "system":
-                    new_messages[i] = system_msg
-                    break
+        system_msg_idx = -1
+        for i, m in enumerate(new_messages):
+            if m.role == "system":
+                system_msg_idx = i
+                break
+                
+        if system_msg_idx != -1:
+            orig = new_messages[system_msg_idx]
+            new_messages[system_msg_idx] = Message(role="system", content=orig.content + f"\n\n{instructions}")
         else:
             new_messages.insert(0, Message(role="system", content=instructions))
             

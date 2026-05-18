@@ -37,6 +37,7 @@ class OllamaAdapter(BaseLLMAdapter):
                     
                     if args:
                         m["tool_calls"] = [{
+                            "id": msg.tool_call_id, # CRITICAL: Must match the tool message's tool_call_id
                             "type": "function",
                             "function": {
                                 "name": msg.name,
@@ -58,12 +59,20 @@ class OllamaAdapter(BaseLLMAdapter):
         # Ollama supports tools in the chat API (for compatible models like llama3.1, mistral, etc.)
         ollama_tools = []
         for tool in tools:
+            # Ensure parameters is a dict (Ollama fails if it receives a JSON string here)
+            params = tool.parameters
+            if isinstance(params, str):
+                try:
+                    params = json.loads(params)
+                except:
+                    params = {"type": "object", "properties": {}}
+
             ollama_tools.append({
                 "type": "function",
                 "function": {
                     "name": tool.name,
                     "description": tool.description,
-                    "parameters": tool.parameters
+                    "parameters": params
                 }
             })
         

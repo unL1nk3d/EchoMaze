@@ -5,8 +5,11 @@ from agenticLLM.models.agent import Tool
 from agenticLLM.ports.drivens.forLLMAndTools import ForToolExecution
 from tunnelsManager import TunnelsManagerAPI
 
+from agenticLLM.core.agent_logger import get_logger
+
 class SystemToolExecutorAdapter(ForToolExecution):
     def __init__(self, tunnels_api: TunnelsManagerAPI, generic_model=None, skills_registry=None):
+        self.logger = get_logger()
         self.tunnels_api = tunnels_api
         self.generic_model = generic_model
         self.skills_registry = skills_registry
@@ -166,12 +169,13 @@ class SystemToolExecutorAdapter(ForToolExecution):
                     "name": {"type": "string", "description": "Unique name for the tool"},
                     "description": {"type": "string"},
                     "parameters_schema": {"type": "object", "description": "JSON Schema for the tool parameters"},
-                    "python_code": {"type": "string", "description": "Python logic for the tool execution"},
+                    "script_type": {"type": "string", "enum": ["python", "powershell", "cmd", "bash"], "default": "python"},
+                    "code": {"type": "string", "description": "The logic/code for the tool"},
                     "requires_approval": {"type": "boolean", "default": True}
                 },
-                "required": ["name", "description", "parameters_schema", "python_code"]
+                "required": ["name", "description", "parameters_schema", "code"]
             },
-            requires_approval=True
+            requires_approval=False
         ))
 
         # 7. Load existing custom tools from disk
@@ -217,35 +221,119 @@ class SystemToolExecutorAdapter(ForToolExecution):
         for filename in os.listdir(custom_dir):
             if filename.endswith(".json"):
                 try:
-                    with open(os.path.join(custom_dir, filename), 'r') as f:
+                    with open(os.path.join(custom_dir, filename), 'r', encoding='utf-8') as f:
                         tool_data = json.load(f)
+                        # Ensure name matches the JSON definition
                         self._tools_cache.append(Tool.from_dict(tool_data))
                 except Exception as e:
-                    print(f"Error loading custom tool {filename}: {e}")
+                    self.logger.error(f"Error loading custom tool {filename}: {e}")
+
+    def _sanitize_name(self, name: str) -> str:
+        """Sanitizes a tool name for use as a filename and identifier."""
+        import re
+        import unicodedata
+        # Remove accents
+        name = "".join(c for c in unicodedata.normalize('NFD', name) if unicodedata.category(c) != 'Mn')
+        # Lowercase, replace spaces with underscores, remove non-alphanumeric
+        name = name.lower().replace(" ", "_")
+        name = re.sub(r'[^a-z0-9_]', '', name)
+        return name
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> str:
-        # Handle Custom Dynamic Tools
-        custom_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "custom_tools")
-        python_file = os.path.join(custom_dir, f"{name}.py")
-        if os.path.exists(python_file):
-            try:
-                # Dynamic execution context
-                ctx = {
-                    "arguments": arguments,
-                    "generic_model": self.generic_model,
-                    "tunnels_api": self.tunnels_api,
-                    "result": None
-                }
-                with open(python_file, 'r') as f:
-                    code = f.read()
-                    exec(code, ctx)
-                return str(ctx.get("result", "Tool executed successfully with no result."))
-            except Exception as e:
-                return f"Error executing custom tool {name}: {str(e)}"
+        # Sanitize incoming name to ensure match with disk/cache
+        safe_name = self._sanitize_name(name)
+        self.logger.info(f"Executing tool: {name} (safe_name: {safe_name}) with args: {arguments}")
 
-        # Handle Skills
-        if name.startswith("skill_") and self.skills_registry:
-            skill_name = name.replace("skill_", "")
+        # 1. Handle Custom Dynamic Tools (Python, PS1, CMD, SH)
+        custom_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "custom_tools")
+        json_file = os.path.join(custom_dir, f"{safe_name}.json")
+        
+        if os.path.exists(json_file):
+            try:
+                with open(json_file, 'r', encoding='utf-8') as f:
+                    tool_meta = json.load(f)
+                
+                stype = tool_meta.get("script_type", "python")
+                self.logger.debug(f"Detected custom tool type: {stype}")
+                
+                # Execution Logic based on type
+                if stype == "python":
+                    python_file = os.path.join(custom_dir, f"{safe_name}.py")
+                    import io
+                    from contextlib import redirect_stdout
+                    
+                    f_stdout = io.StringIO()
+                    # Prepare a rich execution context
+                    ctx = {
+                        "arguments": arguments, 
+                        "generic_model": self.generic_model, 
+                        "tunnels_api": self.tunnels_api, 
+                        "result": None,
+                        "print": print 
+                    }
+                    
+                    try:
+                        with open(python_file, 'r', encoding='utf-8') as f:
+                            code_str = f.read()
+                            with redirect_stdout(f_stdout):
+                                exec(code_str, ctx)
+                    except Exception as exec_e:
+                        error_msg = f"Python Execution Error in '{safe_name}':\n{str(exec_e)}\n\nOutput before error:\n{f_stdout.getvalue()}"
+                        self.logger.error(error_msg)
+                        return error_msg
+                    
+                    res_var = ctx.get("result")
+                    stdout_val = f_stdout.getvalue().strip()
+                    
+                    final_res = ""
+                    if res_var is not None:
+                        final_res = str(res_var)
+                    elif stdout_val:
+                        final_res = stdout_val
+                    else:
+                        final_res = f"Tool '{safe_name}' executed successfully (no return value or print output)."
+                    
+                    self.logger.info(f"Custom Python tool result: {final_res}")
+                    return final_res
+                
+                else:
+                    import subprocess
+                    ext_map = {"powershell": "ps1", "cmd": "cmd", "bash": "sh"}
+                    script_file = os.path.join(custom_dir, f"{safe_name}.{ext_map.get(stype)}")
+                    
+                    if not os.path.exists(script_file):
+                        err = f"Error: Script file for '{safe_name}' ({stype}) not found at {script_file}."
+                        self.logger.error(err)
+                        return err
+                    
+                    # Prepare command environment
+                    env = os.environ.copy()
+                    env["TOOL_ARGS"] = json.dumps(arguments)
+                    
+                    if stype == "powershell":
+                        cmd = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script_file]
+                    elif stype == "cmd":
+                        cmd = ["cmd.exe", "/c", script_file]
+                    else: # bash
+                        cmd = ["bash", script_file]
+                    
+                    self.logger.debug(f"Running subprocess: {cmd}")
+                    res = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=60)
+                    
+                    combined = f"[STDOUT]\n{res.stdout}\n[STDERR]\n{res.stderr}"
+                    self.logger.info(f"Custom Shell tool result (exit code {res.returncode})")
+                    return combined
+
+            except Exception as e:
+                err_msg = f"Internal Error executing custom tool {safe_name}: {str(e)}"
+                self.logger.error(err_msg)
+                return err_msg
+
+        # 2. Handle Skills
+        if name.startswith("skill_") or safe_name.startswith("skill_"):
+            # Original name might be needed for registry lookup if not sanitized there
+            skill_name = name.replace("skill_", "").replace("skill_", "") # twice just in case
+            # Try registry with both
             return self.skills_registry.execute_skill(skill_name, arguments)
 
         # Handle Tunnels Tools
@@ -436,36 +524,63 @@ class SystemToolExecutorAdapter(ForToolExecution):
                 return f"Error during delegation to {agent_persona}: {str(e)}"
 
         elif name == "create_custom_tool":
-            tool_name = arguments.get("name")
+            raw_name = arguments.get("name")
             desc = arguments.get("description")
             schema = arguments.get("parameters_schema")
-            code = arguments.get("python_code")
+            # Support both 'code' and legacy 'python_code'
+            code = arguments.get("code") or arguments.get("python_code")
+            stype = arguments.get("script_type", "python")
             approval = arguments.get("requires_approval", True)
             
-            if not all([tool_name, desc, schema, code]):
-                return "Missing required parameters for create_custom_tool."
+            if not all([raw_name, desc, schema, code]):
+                return f"Missing required parameters for create_custom_tool. Received keys: {list(arguments.keys())}. Need: name, description, parameters_schema, code (or python_code)."
             
-            custom_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "custom_tools")
-            if not os.path.exists(custom_dir):
-                os.makedirs(custom_dir)
+            # SANITIZE NAME: This ensures filenames and internal IDs are safe and matching
+            tool_name = self._sanitize_name(raw_name)
             
-            # Save JSON definition
-            tool_data = {
-                "name": tool_name,
-                "description": desc,
-                "parameters": schema,
-                "requires_approval": approval
-            }
-            with open(os.path.join(custom_dir, f"{tool_name}.json"), 'w') as f:
-                json.dump(tool_data, f, indent=2)
-            
-            # Save Python code
-            with open(os.path.join(custom_dir, f"{tool_name}.py"), 'w') as f:
-                f.write(code)
-            
-            # Add to current session cache
-            self._tools_cache.append(Tool.from_dict(tool_data))
-            
-            return f"Custom tool '{tool_name}' created and registered successfully."
+            # Defensive: ensure schema is a dict
+            if isinstance(schema, str):
+                try:
+                    schema = json.loads(schema)
+                except:
+                    return "Invalid JSON Schema provided in parameters_schema. Must be a valid JSON object/dict."
+
+            try:
+                # Ensure directory exists using absolute path
+                base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                custom_dir = os.path.join(base_dir, "custom_tools")
+                
+                if not os.path.exists(custom_dir):
+                    os.makedirs(custom_dir, exist_ok=True)
+                
+                # Save JSON definition
+                tool_data = {
+                    "name": tool_name,
+                    "description": desc,
+                    "parameters": schema,
+                    "script_type": stype,
+                    "requires_approval": approval
+                }
+                
+                json_path = os.path.join(custom_dir, f"{tool_name}.json")
+                with open(json_path, 'w', encoding='utf-8') as f:
+                    json.dump(tool_data, f, indent=2, ensure_ascii=False)
+                
+                # Save actual script with correct extension
+                ext_map = {"python": "py", "powershell": "ps1", "cmd": "cmd", "bash": "sh"}
+                ext = ext_map.get(stype, "py")
+                script_path = os.path.join(custom_dir, f"{tool_name}.{ext}")
+                
+                with open(script_path, 'w', encoding='utf-8') as f:
+                    f.write(code)
+                
+                # Add to current session cache (using the sanitized name)
+                # Avoid duplicates in cache
+                self._tools_cache = [t for t in self._tools_cache if t.name != tool_name]
+                self._tools_cache.append(Tool.from_dict(tool_data))
+                
+                return f"SUCCESS: Custom tool '{tool_name}' ({stype}) created and registered successfully at {custom_dir}."
+            except Exception as e:
+                return f"FileSystem Error during tool creation: {str(e)}"
 
         return f"Tool {name} not found."

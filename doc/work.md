@@ -2210,3 +2210,25 @@ que haya una API expuesta que pueda consumir para consultar todas las funciones 
    4. A partir de ese segundo, cualquier agente puede llamar a recursive_b64(data='...') como si fuera una herramienta nativa del sistema.
 
   Este sistema permite que EchoMaze sea un ecosistema en constante evolución, donde la IA no solo usa herramientas, sino que también las fabrica según las necesidades de la misión.
+✦ He realizado una revisión profunda de la lógica del agente y he corregido varios problemas críticos que estaban causando que el flujo se detuviera después de la aprobación de herramientas:
+
+  Correcciones en el Núcleo del Agente (AgentUseCase):
+   1. Manejo de Respuestas Vacías: He detectado que algunos modelos devuelven una respuesta vacía después de procesar un resultado de herramienta. Ahora el agente detecta esto y proporciona un mensaje claro en
+      lugar de quedarse en silencio.
+   2. Limpieza de Etiquetas de Pensamiento (<think>): Para modelos como DeepSeek, el agente ahora limpia las etiquetas de razonamiento interno antes de intentar parsear los argumentos de la herramienta,
+      evitando errores de formato JSON.
+   3. Detección de Bucles Repetitivos: He mejorado el detector de bucles para que el agente no se quede atrapado llamando a la misma herramienta con los mismos argumentos infinitamente.
+   4. Aumento de Iteraciones: He subido el límite de razonamiento interno de 5 a 8 iteraciones para permitir planes de ataque más complejos.
+
+  Correcciones en los Adaptadores de LLM (BaseLLMAdapter):
+   1. Sanitización de Roles para ReAct: En el modo manual (ReAct), los modelos no entienden el rol "tool". He implementado un conversor que transforma los resultados de las herramientas en mensajes de
+      "Usuario" formateados como [TOOL OUTPUT], permitiendo que cualquier modelo (incluso los más básicos) pueda entender el resultado de la acción.
+
+  Mejoras en la Interfaz Gráfica (AgentDashboardFrame):
+   1. Visualización del Razonamiento: El historial ahora muestra por separado el razonamiento interno del agente ([Reasoning]) y su respuesta final ([Answer]), lo que te permite ver qué está pensando el modelo
+      tras autorizar una herramienta.
+   2. Visibilidad de Herramientas: Los resultados de las herramientas ahora aparecen claramente etiquetados en el historial como [Tool Result (NombreHerramienta)], lo que te da confirmación visual de que la
+      acción se ejecutó con éxito.
+
+  Estas mejoras garantizan que la cadena de comunicación entre el modelo, la herramienta y el usuario no se rompa, independientemente de si estás usando herramientas nativas u orquestación manual.
+

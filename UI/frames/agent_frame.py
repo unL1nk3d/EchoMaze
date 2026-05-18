@@ -13,7 +13,7 @@ class AgentDashboardFrame(Frame):
             screen.width * 3 // 4,
             title="EchoMaze AI Agent",
             can_scroll=True,
-            reduce_cpu=False
+            reduce_cpu=True
         )
         self.model = model
         self.agent = model.agent_usecase
@@ -304,8 +304,24 @@ class AgentDashboardFrame(Frame):
         formatted_history = ""
         for msg in history:
             if msg.role == "system": continue
-            role_label = "Operator" if msg.role == "user" else "EchoAI"
-            formatted_history += f"[{role_label}]: {msg.content}\n\n"
+            
+            if msg.role == "user":
+                role_label = "Operator"
+                content = msg.content
+            elif msg.role == "tool":
+                role_label = f"Tool Result ({msg.name})"
+                content = msg.content
+            else:
+                role_label = "EchoAI"
+                content = msg.content
+                # Handle thinking tags if present
+                if "<think>" in content and "</think>" in content:
+                    parts = content.split("</think>")
+                    thought = parts[0].replace("<think>", "").strip()
+                    answer = parts[1].strip()
+                    content = f"[Reasoning]: {thought}\n\n[Answer]: {answer}"
+                
+            formatted_history += f"[{role_label}]: {content}\n\n"
         
         self.history_text.value = formatted_history
 
