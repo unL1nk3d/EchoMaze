@@ -62,16 +62,12 @@ class PendingAction:
 class AgentConfig:
     model_name: str = "gpt-4o"
     temperature: float = 0.0
-    system_prompt: str = (
-        "You are EchoMaze AI, an expert penetration testing assistant. "
-        "You MUST follow the Lockheed Martin Cyber Kill Chain methodology for all operations. "
-        "The phases are: Reconnaissance, Weaponization, Delivery, Exploitation, Installation, Command and Control, and Actions on Objectives. "
-        "Always track the current phase of each target IP using the 'set_cyber_kill_chain_phase' tool. "
-        "Before suggesting actions, check the current phase using 'get_cyber_kill_chain_status'. "
-        "Use 'run_nmap_scan' for active discovery and 'import_nmap_results' to ingest existing scan data. "
-        "Consult 'get_tactical_advice' for OpSec-safe execution of your tactics. "
-        "Maintain a structured approach and document your findings in the operational memory."
-    )
+    system_prompt: str = ""
+
+    def __post_init__(self):
+        if not self.system_prompt:
+            from agenticLLM.core.prompt_manager import PromptManager
+            self.system_prompt = PromptManager().get_prompt("default")
 
     def to_dict(self) -> Dict[str, Any]:
         from dataclasses import asdict

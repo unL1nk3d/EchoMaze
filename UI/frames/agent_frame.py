@@ -17,6 +17,8 @@ class AgentDashboardFrame(Frame):
         )
         self.model = model
         self.agent = model.agent_usecase
+        self.manager = model.agent_manager
+        self._active_agent_name = "default"
         self._is_thinking = False
         self._pending_response = None
         self._thinking_animation_count = 0
@@ -36,8 +38,46 @@ class AgentDashboardFrame(Frame):
         self.react_checkbox = CheckBox("Use ReAct Mode", name="use_react", on_change=self._on_react_change)
         
         self._rebuild_layout()
+        self._refresh_agent_info()
         self._refresh_history()
         self._load_available_models()
+
+    def _refresh_agent_info(self):
+        # Update title to show which agent is active
+        self._title = f"EchoMaze AI Agent [{self._active_agent_name.upper()}]"
+        
+    def _switch_agent(self):
+        if not self.manager:
+            return
+
+        agents = self.manager.list_agents()
+        if not agents:
+            return
+
+        # Create specialized agents if they don't exist yet to allow switching
+        # This is a good place to ensure we have the personas requested (OSINT, Maldev, etc.)
+        for persona in ["osint", "maldev", "opsec"]:
+            if persona not in agents:
+                self.manager.create_agent(persona, persona=persona)
+        
+        agents = self.manager.list_agents()
+        
+        # Find current index and move to next
+        try:
+            current_idx = agents.index(self._active_agent_name)
+            next_idx = (current_idx + 1) % len(agents)
+        except ValueError:
+            next_idx = 0
+            
+        self._active_agent_name = agents[next_idx]
+        self.agent = self.manager.get_agent(self._active_agent_name)
+        # Sync with model so other parts of the system know which one is active
+        self.model.agent_usecase = self.agent
+        
+        self._refresh_agent_info()
+        self._refresh_history()
+        self._load_available_models()
+        self._scene.add_effect(PopUpDialog(self._screen, f"Switched to agent: {self._active_agent_name.upper()}", ["OK"]))
 
     def _rebuild_layout(self):
         self._layouts = []
@@ -127,6 +167,12 @@ class AgentDashboardFrame(Frame):
             adapter.use_react = use_react
 
     def process_event(self, event):
+        # Handle Tab key for agent switching
+        if isinstance(event, KeyboardEvent):
+            if event.key_code == Screen.KEY_TAB:
+                self._switch_agent()
+                return None # Consume the event
+
         # Polling check for background response
         if self._is_thinking and self._pending_response is not None:
             response = self._pending_response

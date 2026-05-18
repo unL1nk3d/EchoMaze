@@ -43,7 +43,7 @@ def build_core_stack(session_manager=None, agent_provider=None, agent_memory='in
     from tunnelsManager.core import TunnelsUseCase
     from tunnelsManager.implants_core import ImplantsUseCase
     from tunnelsManager import get_tunnels_api
-    from agenticLLM import get_agent_api
+    from agenticLLM import get_agent_api, get_agent_manager
     
     tunnels_repo = DatabaseTunnelRepository(dao)
     implants_repo = DatabaseImplantRepository(dao)
@@ -51,7 +51,11 @@ def build_core_stack(session_manager=None, agent_provider=None, agent_memory='in
     tunnels_usecase = TunnelsUseCase(tunnels_repo, connection_tester)
     implants_usecase = ImplantsUseCase(implants_repo)
     tunnels_api = get_tunnels_api(dao)
-    # Initialize agent with specified provider and memory
+    
+    # Initialize agent manager
+    agent_manager = get_agent_manager(tunnels_api=tunnels_api)
+
+    # Initialize default agent
     agent_usecase = get_agent_api(
         tunnels_api=tunnels_api, 
         provider_type=agent_provider, 
@@ -67,11 +71,16 @@ def build_core_stack(session_manager=None, agent_provider=None, agent_memory='in
         session_manager=session_manager,
         tunnels_usecase=tunnels_usecase,
         implants_usecase=implants_usecase,
-        agent_usecase=agent_usecase
+        agent_usecase=agent_usecase,
+        agent_manager=agent_manager
     )
     
+    # Register the initial agent in the manager
+    agent_manager._agents["default"] = agent_usecase
     # Inject generic model into agent's tool executor after both are created
     agent_usecase.tools_executor.generic_model = generic
+    # Also inject generic model into manager
+    agent_manager.generic_model = generic
     # Wire GenericModel as observer of ScoringEngine so score_changed events propagate to UI
     scoring_engine.attach(generic)
     return dao, crud, core, cmd, generic, cli_ingestor, auto, repository, scoring_engine

@@ -48,3 +48,8 @@ def get_agent_api(tunnels_api=None, llm_provider=None, generic_model=None, provi
     agent = AgentUseCase(llm_provider, tool_executor, memory_repo, skills_registry)
     
     return agent
+
+def get_agent_manager(tunnels_api=None, generic_model=None):
+    """Factory to get the Agent Manager."""
+    from agenticLLM.core.agent_manager_use_case import AgentManagerUseCase
+    return AgentManagerUseCase(tunnels_api, generic_model)

@@ -2028,3 +2028,115 @@ que haya una API expuesta que pueda consumir para consultar todas las funciones 
       que has seleccionado soporta herramientas nativas o no.
 
   ¡Ahora tienes control total sobre qué cerebro usa EchoMaze para sus operaciones de pentesting!
+
+
+  ✦ He actualizado el script launch.py para incluir un parser que permite cargar herramientas y habilidades desde archivos
+  JSON mediante la línea de comandos.
+
+  Cambios realizados:
+   1. Nuevos Argumentos: El subcomando agent ahora acepta los parámetros --load-tools y --load-skills.
+   2. Integración de Carga: Al usar estos argumentos, el sistema lee los archivos JSON especificados e inyecta las
+      definiciones en el ejecutor de herramientas y el registro de habilidades del agente antes de iniciar la
+      interacción.
+   3. Validación: Se incluyó manejo de errores para reportar si el archivo no existe o si el formato JSON es inválido.
+
+  Ejemplo de uso:
+
+  Para cargar herramientas personalizadas y luego hacer una pregunta al agente:
+
+   1 python launch.py agent --load-tools herramientas.json --ask "usa la nueva herramienta para escanear"
+
+  Para cargar nuevas habilidades dinámicas:
+
+   1 python launch.py agent --load-skills mis_skills.json --ask "ejecuta el skill X"
+
+  También puedes usarlo junto con el comando --ui para que las herramientas cargadas estén disponibles en la interfaz
+  gráfica:
+
+   1 python launch.py agent --load-tools herramientas.json --ui
+
+
+
+✦ He desarrollado el "hexágono" de gestión multi-agente para EchoMaze, permitiendo la creación y administración de
+  agentes especializados con diferentes enfoques operacionales.
+
+  Arquitectura Implementada:
+
+   1. Puerto de Gestión (ForAgentManagement): Definido en agenticLLM/ports/drivers/forAgentManagement.py, establece la
+      interfaz para crear, listar y recuperar agentes.
+   2. Caso de Uso de Gestión (AgentManagerUseCase): Implementado en agenticLLM/core/agent_manager_use_case.py. Actúa
+      como un registro central que maneja el ciclo de vida de múltiples agentes.
+   3. Personas Especializadas: He pre-configurado los siguientes enfoques iniciales:
+       * OSINT Expert: Enfocado en reconocimiento activo y mapeo de red.
+       * Maldev Specialist: Experto en técnicas de explotación y evasión (MITRE ATT&CK).
+       * OpSec Auditor: Centrado en mantener el perfil bajo y analizar el ruido de las acciones.
+       * General: El asistente estándar de EchoMaze.
+
+  Integración:
+   * API: Se añadió la función get_agent_manager() en agenticLLM/api.py.
+   * Modelo UI: El GenericModel ahora incorpora el agent_manager, permitiendo que la interfaz gráfica pueda alternar
+     entre diferentes agentes.
+   * Lanzador: launch.py inicializa automáticamente el gestor y registra un agente por defecto.
+
+  Ejemplo de uso programático:
+
+    1 from agenticLLM.api import get_agent_manager
+    2
+    3 manager = get_agent_manager()
+    4
+    5 # Crear un agente experto en OSINT
+    6 osint_agent = manager.create_agent("spy_unit", persona="osint")
+    7
+    8 # Crear un agente experto en Malware Development
+    9 mal_agent = manager.create_agent("payload_gen", persona="maldev")
+   10
+   11 # Listar agentes activos
+   12 print(manager.list_agents()) # ['default', 'spy_unit', 'payload_gen']
+   13
+   14 # Interactuar con uno específico
+   15 response = osint_agent.ask("¿Cuál es la topología de la red?")
+
+✦ He modificado la arquitectura de EchoMaze para eliminar el hardcodeo de prompts y permitir su gestión dinámica:
+
+   1. Nuevo Directorio de Prompts: Se creó la carpeta agenticLLM/prompts/ para centralizar las plantillas.
+   2. Configuración Externa: He implementado el archivo agenticLLM/prompts/system_prompts.json que contiene todas las
+      definiciones de sistema para las diferentes personas (OSINT, Maldev, OpSec, etc.).
+   3. PromptManager: Introduje una nueva clase PromptManager (Patrón Singleton) en agenticLLM/core/prompt_manager.py
+      encargada de cargar, servir y permitir la actualización dinámica de los prompts en tiempo de ejecución.
+   4. Refactorización de Modelos y Casos de Uso:
+       * AgentConfig ahora carga su prompt inicial desde el PromptManager.
+       * AgentManagerUseCase ahora construye sus agentes especializados basándose en las llaves definidas en el archivo
+         JSON, eliminando las cadenas de texto estáticas del código.
+
+  Ahora puedes cambiar el comportamiento de cualquier agente o añadir nuevas especialidades simplemente editando el
+  archivo system_prompts.json, sin necesidad de modificar el código fuente.
+
+  Ejemplo de cómo añadir una nueva especialidad en el JSON:
+
+   1 {
+   2     "system_prompts": {
+   3         "forensics": "Eres un experto en respuesta a incidentes y forense digital..."
+   4     }
+   5 }
+
+  Y luego crear el agente dinámicamente:
+
+   1 agente_forense = manager.create_agent("investigador", persona="forensics")
+
+
+                                                                                                        ? for shortcuts
+───────────────────────────────────────
+
+✦ He corregido el error AttributeError: property 'label' of 'Text' object has no setter.
+
+  El problema se debía a que en la librería asciimatics, la propiedad label de los widgets es de solo lectura una vez
+  que el objeto ha sido instanciado. Para solucionar el crash:
+
+   1. Eliminación del conflicto: He eliminado la línea que intentaba modificar self.input_text.label dinámicamente.
+   2. Identificación Alternativa: He mantenido la actualización del título del Frame: self._title = f"EchoMaze AI Agent
+      [{self._active_agent_name.upper()}]". Esta es una forma válida y segura en asciimatics para indicar qué agente
+      está activo sin romper el layout de los widgets internos.
+   3. Diálogos de Confirmación: Se mantiene el cuadro de diálogo emergente que aparece al presionar TAB, asegurando que
+      el usuario sepa exactamente a qué agente ha cambiado.
+
+  La interfaz ahora es estable y permite alternar entre los diversos agentes especialistas sin errores.
