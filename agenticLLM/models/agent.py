@@ -27,6 +27,7 @@ class Tool:
     description: str
     parameters: Dict[str, Any] # JSON Schema
     requires_approval: bool = False
+    script_type: str = "python" # e.g., 'python', 'powershell', 'cmd', 'bash'
 
     def to_dict(self) -> Dict[str, Any]:
         from dataclasses import asdict

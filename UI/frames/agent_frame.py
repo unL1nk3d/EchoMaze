@@ -13,7 +13,7 @@ class AgentDashboardFrame(Frame):
             screen.width * 3 // 4,
             title="EchoMaze AI Agent",
             can_scroll=True,
-            reduce_cpu=True
+            reduce_cpu=False # Allow continuous background update for thinking
         )
         self.model = model
         self.agent = model.agent_usecase
