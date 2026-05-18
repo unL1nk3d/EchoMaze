@@ -13,7 +13,7 @@ class AgentDashboardFrame(Frame):
             screen.width * 3 // 4,
             title="EchoMaze AI Agent",
             can_scroll=True,
-            reduce_cpu=True
+            reduce_cpu=False
         )
         self.model = model
         self.agent = model.agent_usecase
@@ -28,7 +28,13 @@ class AgentDashboardFrame(Frame):
         
         self.input_text = Text(label="Ask AI:", name="user_input")
         
-        # Model Configuration Widgets
+        # Model & Agent Configuration Widgets
+        self.agent_dropdown = DropdownList(
+            [("Default", "default")],
+            label="Active Agent:",
+            name="active_agent",
+            on_change=self._on_agent_change
+        )
         self.model_dropdown = DropdownList(
             [("Default", "default")],
             label="Ollama Model:",
@@ -38,6 +44,40 @@ class AgentDashboardFrame(Frame):
         self.react_checkbox = CheckBox("Use ReAct Mode", name="use_react", on_change=self._on_react_change)
         
         self._rebuild_layout()
+        self._refresh_agent_list()
+        self._refresh_agent_info()
+        self._refresh_history()
+        self._load_available_models()
+
+    def _refresh_agent_list(self):
+        if not self.manager:
+            return
+
+        # Dynamically discover all possible personas from PromptManager
+        all_personas = self.manager.prompt_manager.list_keys()
+        
+        # Ensure all discovered specialized personas are registered in the manager
+        # (excluding 'default' which is handled specially)
+        for persona in all_personas:
+            if persona != "default" and persona not in self.manager.list_agents():
+                self.manager.create_agent(persona, persona=persona)
+        
+        # Get the full list of active agent sessions
+        agents = self.manager.list_agents()
+        options = [(a.upper(), a) for a in agents]
+        self.agent_dropdown.options = options
+        self.agent_dropdown.value = self._active_agent_name
+
+    def _on_agent_change(self):
+        self.save()
+        new_agent = self.data.get("active_agent")
+        if not new_agent or new_agent == self._active_agent_name:
+            return
+            
+        self._active_agent_name = new_agent
+        self.agent = self.manager.get_agent(self._active_agent_name)
+        self.model.agent_usecase = self.agent
+        
         self._refresh_agent_info()
         self._refresh_history()
         self._load_available_models()
@@ -45,49 +85,18 @@ class AgentDashboardFrame(Frame):
     def _refresh_agent_info(self):
         # Update title to show which agent is active
         self._title = f"EchoMaze AI Agent [{self._active_agent_name.upper()}]"
-        
-    def _switch_agent(self):
-        if not self.manager:
-            return
-
-        agents = self.manager.list_agents()
-        if not agents:
-            return
-
-        # Create specialized agents if they don't exist yet to allow switching
-        # This is a good place to ensure we have the personas requested (OSINT, Maldev, etc.)
-        for persona in ["osint", "maldev", "opsec"]:
-            if persona not in agents:
-                self.manager.create_agent(persona, persona=persona)
-        
-        agents = self.manager.list_agents()
-        
-        # Find current index and move to next
-        try:
-            current_idx = agents.index(self._active_agent_name)
-            next_idx = (current_idx + 1) % len(agents)
-        except ValueError:
-            next_idx = 0
-            
-        self._active_agent_name = agents[next_idx]
-        self.agent = self.manager.get_agent(self._active_agent_name)
-        # Sync with model so other parts of the system know which one is active
-        self.model.agent_usecase = self.agent
-        
-        self._refresh_agent_info()
-        self._refresh_history()
-        self._load_available_models()
-        self._scene.add_effect(PopUpDialog(self._screen, f"Switched to agent: {self._active_agent_name.upper()}", ["OK"]))
 
     def _rebuild_layout(self):
         self._layouts = []
         
-        layout_config = Layout([70, 30])
+        layout_config = Layout([35, 35, 30])
         self.add_layout(layout_config)
-        layout_config.add_widget(self.model_dropdown, 0)
-        layout_config.add_widget(self.react_checkbox, 1)
+        layout_config.add_widget(self.agent_dropdown, 0)
+        layout_config.add_widget(self.model_dropdown, 1)
+        layout_config.add_widget(self.react_checkbox, 2)
         layout_config.add_widget(Divider(), 0)
         layout_config.add_widget(Divider(), 1)
+        layout_config.add_widget(Divider(), 2)
 
         layout_history = Layout([100])
         self.add_layout(layout_history)
@@ -166,13 +175,7 @@ class AgentDashboardFrame(Frame):
         if hasattr(adapter, 'use_react'):
             adapter.use_react = use_react
 
-    def process_event(self, event):
-        # Handle Tab key for agent switching
-        if isinstance(event, KeyboardEvent):
-            if event.key_code == Screen.KEY_TAB:
-                self._switch_agent()
-                return None # Consume the event
-
+    def update(self, frame_no):
         # Polling check for background response
         if self._is_thinking and self._pending_response is not None:
             response = self._pending_response
@@ -184,6 +187,9 @@ class AgentDashboardFrame(Frame):
             
             self._refresh_history()
             
+        super(AgentDashboardFrame, self).update(frame_no)
+
+    def process_event(self, event):
         return super(AgentDashboardFrame, self).process_event(event)
 
     def _send_query(self):
@@ -261,16 +267,26 @@ class AgentDashboardFrame(Frame):
         msg = f"APPROVAL REQUIRED\n\nTool: {pending['tool_name']}\nArgs: {pending['arguments']}\n\nDo you want to allow this action?"
         
         def _on_approve():
-            resp = self.agent.provide_approval(True)
-            if "[WAITING_FOR_APPROVAL]" in resp:
-                self._ask_for_approval()
-            self._refresh_history()
+            self._is_thinking = True
+            self.history_text.value += "[EchoAI]: Executing tool and thinking...\n\n"
+            def _background_approve():
+                try:
+                    resp = self.agent.provide_approval(True)
+                    self._pending_response = resp
+                except Exception as e:
+                    self._pending_response = f"Error: {str(e)}"
+            threading.Thread(target=_background_approve, daemon=True).start()
 
         def _on_reject():
-            resp = self.agent.provide_approval(False)
-            if "[WAITING_FOR_APPROVAL]" in resp:
-                self._ask_for_approval()
-            self._refresh_history()
+            self._is_thinking = True
+            self.history_text.value += "[EchoAI]: Action rejected, thinking...\n\n"
+            def _background_reject():
+                try:
+                    resp = self.agent.provide_approval(False)
+                    self._pending_response = resp
+                except Exception as e:
+                    self._pending_response = f"Error: {str(e)}"
+            threading.Thread(target=_background_reject, daemon=True).start()
 
         self._scene.add_effect(PopUpDialog(
             self._screen, 

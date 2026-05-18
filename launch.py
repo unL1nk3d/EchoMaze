@@ -52,8 +52,8 @@ def build_core_stack(session_manager=None, agent_provider=None, agent_memory='in
     implants_usecase = ImplantsUseCase(implants_repo)
     tunnels_api = get_tunnels_api(dao)
     
-    # Initialize agent manager
-    agent_manager = get_agent_manager(tunnels_api=tunnels_api)
+    # Initialize agent manager with selected provider
+    agent_manager = get_agent_manager(tunnels_api=tunnels_api, default_provider=agent_provider)
 
     # Initialize default agent
     agent_usecase = get_agent_api(

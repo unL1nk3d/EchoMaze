@@ -6,10 +6,11 @@ from agenticLLM.models.agent import AgentConfig
 from agenticLLM.core.prompt_manager import PromptManager
 
 class AgentManagerUseCase(ForAgentManagement):
-    def __init__(self, tunnels_api=None, generic_model=None):
+    def __init__(self, tunnels_api=None, generic_model=None, default_provider: str = "mock"):
         self._agents: Dict[str, ForAgentInteraction] = {}
         self.tunnels_api = tunnels_api
         self.generic_model = generic_model
+        self.default_provider = default_provider
         self.prompt_manager = PromptManager()
         self._personas: Dict[str, AgentConfig] = self._load_personas_from_manager()
 
@@ -19,9 +20,12 @@ class AgentManagerUseCase(ForAgentManagement):
             personas[key] = AgentConfig(system_prompt=self.prompt_manager.get_prompt(key))
         return personas
 
-    def create_agent(self, name: str, persona: str = "general", provider: str = "mock", tools_file: Optional[str] = None) -> ForAgentInteraction:
+    def create_agent(self, name: str, persona: str = "general", provider: Optional[str] = None, tools_file: Optional[str] = None) -> ForAgentInteraction:
         if name in self._agents:
             return self._agents[name]
+        
+        # Use provided provider, or fallback to the manager's default provider
+        active_provider = provider or self.default_provider
         
         # Refresh personas in case PromptManager was updated
         self._personas = self._load_personas_from_manager()
@@ -30,9 +34,9 @@ class AgentManagerUseCase(ForAgentManagement):
         # Use the existing factory to get an agent instance
         agent = get_agent_api(
             tunnels_api=self.tunnels_api,
-            llm_provider=None, # Will be created by factory based on provider
+            llm_provider=None, 
             generic_model=self.generic_model,
-            provider_type=provider
+            provider_type=active_provider
         )
         
         # Override the agent's config with the persona's config

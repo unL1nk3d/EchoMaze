@@ -49,7 +49,7 @@ def get_agent_api(tunnels_api=None, llm_provider=None, generic_model=None, provi
     
     return agent
 
-def get_agent_manager(tunnels_api=None, generic_model=None):
+def get_agent_manager(tunnels_api=None, generic_model=None, default_provider: str = "mock"):
     """Factory to get the Agent Manager."""
     from agenticLLM.core.agent_manager_use_case import AgentManagerUseCase
-    return AgentManagerUseCase(tunnels_api, generic_model)
+    return AgentManagerUseCase(tunnels_api, generic_model, default_provider)

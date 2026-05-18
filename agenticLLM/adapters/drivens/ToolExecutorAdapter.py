@@ -137,6 +137,46 @@ class SystemToolExecutorAdapter(ForToolExecution):
             }
         ))
 
+        # 6. Orchestration Tools
+        self._tools_cache.append(Tool(
+            name="get_available_agents",
+            description="Lists all specialized agent personas (e.g., osint, maldev) and currently active agent sessions.",
+            parameters={}
+        ))
+        self._tools_cache.append(Tool(
+            name="delegate_to_agent",
+            description="Delegates a specific sub-task to a specialized agent. Use 'get_available_agents' first to find valid personas.",
+            parameters={
+                "type": "object", 
+                "properties": {
+                    "agent_persona": {"type": "string", "description": "The persona/type of the specialist (e.g., osint, maldev, opsec)"},
+                    "task_description": {"type": "string"}
+                },
+                "required": ["agent_persona", "task_description"]
+            },
+            requires_approval=True
+        ))
+
+        self._tools_cache.append(Tool(
+            name="create_custom_tool",
+            description="Dynamically creates and registers a new tool in the system.",
+            parameters={
+                "type": "object", 
+                "properties": {
+                    "name": {"type": "string", "description": "Unique name for the tool"},
+                    "description": {"type": "string"},
+                    "parameters_schema": {"type": "object", "description": "JSON Schema for the tool parameters"},
+                    "python_code": {"type": "string", "description": "Python logic for the tool execution"},
+                    "requires_approval": {"type": "boolean", "default": True}
+                },
+                "required": ["name", "description", "parameters_schema", "python_code"]
+            },
+            requires_approval=True
+        ))
+
+        # 7. Load existing custom tools from disk
+        self._load_custom_tools_from_disk()
+
         # 5. Dynamic Skills
         if self.skills_registry:
             skills = self.skills_registry.list_available_skills()
@@ -168,7 +208,41 @@ class SystemToolExecutorAdapter(ForToolExecution):
         elif isinstance(data, dict):
              self._tools_cache.append(Tool.from_dict(data))
 
+    def _load_custom_tools_from_disk(self):
+        """Loads and registers custom tools from the custom_tools directory."""
+        custom_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "custom_tools")
+        if not os.path.exists(custom_dir):
+            return
+
+        for filename in os.listdir(custom_dir):
+            if filename.endswith(".json"):
+                try:
+                    with open(os.path.join(custom_dir, filename), 'r') as f:
+                        tool_data = json.load(f)
+                        self._tools_cache.append(Tool.from_dict(tool_data))
+                except Exception as e:
+                    print(f"Error loading custom tool {filename}: {e}")
+
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> str:
+        # Handle Custom Dynamic Tools
+        custom_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "custom_tools")
+        python_file = os.path.join(custom_dir, f"{name}.py")
+        if os.path.exists(python_file):
+            try:
+                # Dynamic execution context
+                ctx = {
+                    "arguments": arguments,
+                    "generic_model": self.generic_model,
+                    "tunnels_api": self.tunnels_api,
+                    "result": None
+                }
+                with open(python_file, 'r') as f:
+                    code = f.read()
+                    exec(code, ctx)
+                return str(ctx.get("result", "Tool executed successfully with no result."))
+            except Exception as e:
+                return f"Error executing custom tool {name}: {str(e)}"
+
         # Handle Skills
         if name.startswith("skill_") and self.skills_registry:
             skill_name = name.replace("skill_", "")
@@ -323,5 +397,75 @@ class SystemToolExecutorAdapter(ForToolExecution):
                     advice.extend(ts.suggest_for_service(service))
                 return "\n".join(advice) if advice else "No specific advice available for these parameters."
             return "Tactical suggestions engine not available."
+
+        elif name == "get_available_agents":
+            if not self.generic_model or not self.generic_model.agent_manager:
+                return "Agent Manager not available."
+            
+            manager = self.generic_model.agent_manager
+            # Get possible personas from PromptManager via the manager
+            personas = manager.prompt_manager.list_keys()
+            # Get currently active instances
+            active_sessions = manager.list_agents()
+            
+            return json.dumps({
+                "available_personas": personas,
+                "active_agent_sessions": active_sessions,
+                "note": "You can delegate tasks to any persona using 'delegate_to_agent'."
+            }, indent=2)
+
+        elif name == "delegate_to_agent":
+            agent_persona = arguments.get("agent_persona")
+            task = arguments.get("task_description")
+            if not agent_persona or not task: return "Missing agent_persona or task_description."
+            
+            if not self.generic_model or not self.generic_model.agent_manager:
+                return "Agent Manager not available."
+            
+            # Use a unique name for the temporary specialized agent session
+            agent_name = f"orchestrated_{agent_persona}"
+            target_agent = self.generic_model.agent_manager.get_agent(agent_name)
+            if not target_agent:
+                target_agent = self.generic_model.agent_manager.create_agent(agent_name, persona=agent_persona)
+            
+            try:
+                # Execute the task through the specialized agent
+                response = target_agent.ask(task)
+                return f"[DELEGATION RESULT FROM {agent_persona.upper()}]:\n{response}"
+            except Exception as e:
+                return f"Error during delegation to {agent_persona}: {str(e)}"
+
+        elif name == "create_custom_tool":
+            tool_name = arguments.get("name")
+            desc = arguments.get("description")
+            schema = arguments.get("parameters_schema")
+            code = arguments.get("python_code")
+            approval = arguments.get("requires_approval", True)
+            
+            if not all([tool_name, desc, schema, code]):
+                return "Missing required parameters for create_custom_tool."
+            
+            custom_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "custom_tools")
+            if not os.path.exists(custom_dir):
+                os.makedirs(custom_dir)
+            
+            # Save JSON definition
+            tool_data = {
+                "name": tool_name,
+                "description": desc,
+                "parameters": schema,
+                "requires_approval": approval
+            }
+            with open(os.path.join(custom_dir, f"{tool_name}.json"), 'w') as f:
+                json.dump(tool_data, f, indent=2)
+            
+            # Save Python code
+            with open(os.path.join(custom_dir, f"{tool_name}.py"), 'w') as f:
+                f.write(code)
+            
+            # Add to current session cache
+            self._tools_cache.append(Tool.from_dict(tool_data))
+            
+            return f"Custom tool '{tool_name}' created and registered successfully."
 
         return f"Tool {name} not found."

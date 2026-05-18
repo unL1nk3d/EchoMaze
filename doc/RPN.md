@@ -24,17 +24,18 @@ Feature Toggles (Interruptores para apagar sugerencias): FALTANTE / PARCIAL. El 
 ✦ Basado en la arquitectura actual de EchoMaze y las implementaciones que hemos realizado (serialización, multi-agentes, carga dinámica de herramientas), he identificado las siguientes áreas de oportunidad
   estratégicas para llevar el proyecto al siguiente nivel:
 
-  1. Orquestación y Colaboración Multi-Agente (Swarm)
+  1. Orquestación y Colaboración Multi-Agente (Swarm) * 
   Actualmente tienes agentes especializados (OSINT, Maldev, etc.), pero operan de forma aislada.
    * Oportunidad: Implementar un Agente Orquestador que reciba una orden compleja (ej. "compromete la IP 10.10.10.5") y delegue subtareas automáticamente a los agentes especializados.
    * Beneficio: Transforma a EchoMaze de un "asistente de chat" a una plataforma de ejecución autónoma guiada.
+   * falta: que podamos colocar por cada agente un provedor 
 
-  2. Integración de Evidencias y Generación de Reportes
+  2. Integración de Evidencias y Generación de Reportes *
   El sistema ya gestiona nodos IP, puertos y artefactos.
    * Oportunidad: Crear un módulo de Reporting Dinámico que exporte todo el historial de la base de datos GATHERINGDB a formatos como Markdown o PDF, organizados por la Cyber Kill Chain.
    * Beneficio: Automatiza la parte más tediosa de un Pentest: la documentación final.
 
-  3. Simulación de Adversarios (Playbooks)
+  3. Simulación de Adversarios (Playbooks) *
   Tienes un sistema de "Skills" y "Tools" cargables por JSON.
    * Oportunidad: Desarrollar Playbooks de Intrusión (archivos YAML/JSON) que definan secuencias de comandos para técnicas específicas (ej. movimiento lateral vía WinRM). Los agentes podrían "leer" estos
      playbooks para ejecutar ataques complejos paso a paso.
@@ -46,7 +47,7 @@ Feature Toggles (Interruptores para apagar sugerencias): FALTANTE / PARCIAL. El 
      objetivo crítico.
    * Beneficio: Facilita la comprensión de redes complejas con múltiples capas de aislamiento.
 
-  5. Análisis Predictivo de OpSec (Machine Learning)
+  5. Análisis Predictivo de OpSec (Machine Learning) * 
   Ya cuentas con un ScoringEngine y análisis de entropía.
    * Oportunidad: Entrenar un modelo pequeño de ML (o usar el LLM con RAG) para predecir la Probabilidad de Detección basada en el historial de comandos ejecutados y la configuración de seguridad del objetivo.
    * Beneficio: Proporciona advertencias proactivas ("Este comando tiene un 80% de probabilidad de alertar al EDR en este contexto").

@@ -2140,3 +2140,73 @@ que haya una API expuesta que pueda consumir para consultar todas las funciones 
       el usuario sepa exactamente a qué agente ha cambiado.
 
   La interfaz ahora es estable y permite alternar entre los diversos agentes especialistas sin errores.
+
+
+
+✦ He implementado el sistema de Orquestación y Colaboración Multi-Agente (Swarm) en EchoMaze. Este sistema transforma la interacción individual en un flujo de trabajo colaborativo y jerárquico.
+
+  Componentes de la Orquestación:
+
+   1. Nueva Persona: Orchestrator:
+       * Definida dinámicamente en system_prompts.json.
+       * Su función es recibir objetivos de alto nivel del operador, descomponerlos en subtareas y supervisar la ejecución.
+   2. Herramienta de Delegación (delegate_to_agent):
+       * He añadido esta herramienta al SystemToolExecutorAdapter.
+       * Permite que un agente (especialmente el Orquestador) envíe una tarea específica a otro agente especialista (osint, maldev, o opsec).
+       * La herramienta espera a que el especialista responda y devuelve el resultado al agente solicitante para que este pueda continuar con su plan.
+   3. Flujo Colaborativo:
+       * Cuando el Orquestador recibe una orden como "Analiza la seguridad de la IP 10.1.1.1", puede usar delegate_to_agent para pedirle a osint un escaneo de puertos, y luego a opsec un análisis de riesgos de
+         los hallazgos.
+
+  Ejemplo de uso:
+
+  Puedes activar al Orquestador desde la UI (presionando TAB hasta llegar a ORCHESTRATOR) y darle una instrucción compleja:
+
+  Operador: "Analiza la superficie de ataque de la red local y dime cuál es el punto de entrada más ruidoso."
+
+  Orquestador (Internal logic):
+   1. Llamada a delegate_to_agent(agent_persona='osint', task_description='Escanea la red local y detecta servicios abiertos').
+   2. Recibe hallazgos de OSINT.
+   3. Llamada a delegate_to_agent(agent_persona='opsec', task_description='Analiza el riesgo de los servicios detectados [Hallazgos]').
+   4. Consolida la información y responde al operador con un plan detallado.
+
+  Este enfoque permite que EchoMaze resuelva problemas complejos de forma autónoma, aprovechando la pericia de cada "especialista" digital.
+
+✦ He corregido el problema por el cual los agentes especialistas (OSINT, Maldev, etc.) se quedaban bloqueados en el modo mock incluso cuando usabas un proveedor real como Ollama.
+
+  Cambios realizados:
+
+   1. Propagación del Proveedor: He actualizado el AgentManagerUseCase para que almacene un proveedor por defecto. Este proveedor se configura automáticamente al iniciar la aplicación basándose en tus
+      argumentos de línea de comandos (ej. --provider ollama).
+   2. Configuración en launch.py: El script de lanzamiento ahora comunica al gestor de agentes cuál es el motor de IA preferido por el usuario.
+   3. Herencia de Capacidades: Todos los agentes creados dinámicamente (ya sea mediante la tecla TAB en la UI o mediante la herramienta de Delegación del Orquestador) ahora heredan automáticamente el proveedor
+      real.
+   4. Consistencia del Swarm: Esto garantiza que cuando el Orquestador delega una tarea a un especialista, ambos estén utilizando el mismo modelo de lenguaje (Ollama, LlamaCpp, etc.), permitiendo una
+      colaboración real y efectiva.
+
+  Ahora, si lanzas EchoMaze con python launch.py agent --provider ollama, todos los agentes del "enjambre" utilizarán tu instancia local de Ollama.
+
+
+✦ He implementado el agente Tool Creator, una entidad especializada capaz de expandir las capacidades de EchoMaze de forma autónoma y en tiempo de ejecución.
+
+  Capacidades del Tool Creator:
+
+   1. Nueva Persona: Tool Creator:
+       * Añadida al sistema dinámico de prompts. Su misión es identificar carencias funcionales y programar nuevas herramientas para solucionarlas.
+   2. Infraestructura de Herramientas Dinámicas:
+       * He creado el directorio agenticLLM/custom_tools/ donde se almacenan las nuevas herramientas.
+       * Persistencia: Cada herramienta creada se guarda como un archivo .json (definición) y un archivo .py (lógica), lo que permite que sobrevivan a reinicios de la aplicación.
+   3. Herramienta create_custom_tool:
+       * Permite al agente definir el nombre, descripción, esquema de parámetros y el código Python real de la nueva herramienta.
+       * Al ejecutarse, la herramienta se registra instantáneamente en la memoria del agente y queda disponible para todos los demás agentes (OSINT, Maldev, Orquestador).
+   4. Carga Dinámica:
+       * Al iniciar EchoMaze, el sistema escanea automáticamente custom_tools/ y carga cualquier herramienta personalizada previa.
+
+  Ejemplo de flujo de trabajo:
+
+   1. El operador o el Orquestador detectan que necesitan una herramienta para "Decodificar Base64 de forma recursiva".
+   2. El Tool Creator recibe la tarea y genera el código Python necesario.
+   3. Llama a create_custom_tool(name='recursive_b64', ...) pasando el código.
+   4. A partir de ese segundo, cualquier agente puede llamar a recursive_b64(data='...') como si fuera una herramienta nativa del sistema.
+
+  Este sistema permite que EchoMaze sea un ecosistema en constante evolución, donde la IA no solo usa herramientas, sino que también las fabrica según las necesidades de la misión.
