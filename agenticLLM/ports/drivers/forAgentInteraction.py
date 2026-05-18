@@ -27,3 +27,8 @@ class ForAgentInteraction(ABC):
     def provide_approval(self, approved: bool) -> str:
         """Resumes agent execution after operator approval/rejection."""
         pass
+
+    @abstractmethod
+    def get_tools_json(self) -> str:
+        """Returns the available tools in JSON format."""
+        pass

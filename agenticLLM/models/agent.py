@@ -7,6 +7,19 @@ class Message:
     content: str
     tool_call_id: Optional[str] = None
     name: Optional[str] = None
+    tool_arguments: Optional[Dict[str, Any]] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        from dataclasses import asdict
+        return asdict(self)
+
+    def to_json(self) -> str:
+        import json
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Message':
+        return cls(**data)
 
 @dataclass
 class Tool:
@@ -15,11 +28,35 @@ class Tool:
     parameters: Dict[str, Any] # JSON Schema
     requires_approval: bool = False
 
+    def to_dict(self) -> Dict[str, Any]:
+        from dataclasses import asdict
+        return asdict(self)
+
+    def to_json(self) -> str:
+        import json
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Tool':
+        return cls(**data)
+
 @dataclass
 class PendingAction:
     tool_call_id: str
     tool_name: str
     arguments: Dict[str, Any]
+
+    def to_dict(self) -> Dict[str, Any]:
+        from dataclasses import asdict
+        return asdict(self)
+
+    def to_json(self) -> str:
+        import json
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'PendingAction':
+        return cls(**data)
 
 @dataclass
 class AgentConfig:
@@ -31,14 +68,39 @@ class AgentConfig:
         "The phases are: Reconnaissance, Weaponization, Delivery, Exploitation, Installation, Command and Control, and Actions on Objectives. "
         "Always track the current phase of each target IP using the 'set_cyber_kill_chain_phase' tool. "
         "Before suggesting actions, check the current phase using 'get_cyber_kill_chain_status'. "
+        "Use 'run_nmap_scan' for active discovery and 'import_nmap_results' to ingest existing scan data. "
+        "Consult 'get_tactical_advice' for OpSec-safe execution of your tactics. "
         "Maintain a structured approach and document your findings in the operational memory."
     )
+
+    def to_dict(self) -> Dict[str, Any]:
+        from dataclasses import asdict
+        return asdict(self)
+
+    def to_json(self) -> str:
+        import json
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'AgentConfig':
+        return cls(**data)
 
 class AgentState:
     def __init__(self):
         self.history: List[Message] = []
         self.available_tools: List[Tool] = []
         self.pending_action: Optional[PendingAction] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "history": [m.to_dict() for m in self.history],
+            "available_tools": [t.to_dict() for t in self.available_tools],
+            "pending_action": self.pending_action.to_dict() if self.pending_action else None
+        }
+
+    def to_json(self) -> str:
+        import json
+        return json.dumps(self.to_dict())
 
 @dataclass
 class OperationalMemory:
@@ -48,6 +110,18 @@ class OperationalMemory:
     timestamp: str = ""
     phase: str = "Reconnaissance" # Lockheed Martin Cyber Kill Chain phase
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        from dataclasses import asdict
+        return asdict(self)
+
+    def to_json(self) -> str:
+        import json
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'OperationalMemory':
+        return cls(**data)
 
 class CyberKillChain:
     RECONNAISSANCE = "Reconnaissance"
@@ -71,3 +145,15 @@ class Skill:
     category: str = "general" # e.g., 'discovery', 'exploitation', 'utility'
     parameters_schema: Dict[str, Any] = field(default_factory=dict)
     requires_approval: bool = False
+
+    def to_dict(self) -> Dict[str, Any]:
+        from dataclasses import asdict
+        return asdict(self)
+
+    def to_json(self) -> str:
+        import json
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Skill':
+        return cls(**data)

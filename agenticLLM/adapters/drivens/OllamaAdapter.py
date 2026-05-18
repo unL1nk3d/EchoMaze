@@ -29,17 +29,23 @@ class OllamaAdapter(BaseLLMAdapter):
             # If it was an assistant message with a tool call, we MUST format it with tool_calls for Ollama
             if msg.role == "assistant" and msg.tool_call_id:
                 try:
-                    # In EchoMaze, assistant messages with tool_calls store arguments in content
-                    args = json.loads(msg.content) if msg.content else {}
-                    m["tool_calls"] = [{
-                        "type": "function",
-                        "function": {
-                            "name": msg.name,
-                            "arguments": args
-                        }
-                    }]
-                    # Content usually empty when tool_calls is present
-                    m["content"] = ""
+                    # Prefer the structured tool_arguments field
+                    args = msg.tool_arguments
+                    if not args and msg.content:
+                         # Fallback to parsing content if field is empty
+                         args = json.loads(msg.content)
+                    
+                    if args:
+                        m["tool_calls"] = [{
+                            "type": "function",
+                            "function": {
+                                "name": msg.name,
+                                "arguments": args
+                            }
+                        }]
+                        # If we have tool_calls, Ollama often prefers content to be empty or reasoning only
+                        # For DeepSeek-R1, we keep the content if it's there (reasoning)
+                        m["content"] = msg.content if msg.content and not msg.content.startswith('{') else ""
                 except Exception:
                     pass
             
@@ -88,9 +94,10 @@ class OllamaAdapter(BaseLLMAdapter):
                     
                     return Message(
                         role="assistant",
-                        content=json.dumps(tool_args),
+                        content=content, # Keep original text content (thoughts, etc.)
                         tool_call_id=f"ollama_{tool_name}",
-                        name=tool_name
+                        name=tool_name,
+                        tool_arguments=tool_args
                     )
 
                 return Message(role="assistant", content=content)

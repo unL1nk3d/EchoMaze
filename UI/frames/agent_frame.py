@@ -59,12 +59,28 @@ class AgentDashboardFrame(Frame):
         layout_input.add_widget(self.input_text, 0)
         layout_input.add_widget(Button("Send", self._send_query), 1)
 
-        layout_buttons = Layout([1, 1])
+        layout_buttons = Layout([1, 1, 1])
         self.add_layout(layout_buttons)
-        layout_buttons.add_widget(Button("Reset", self._reset_agent), 0)
-        layout_buttons.add_widget(Button("Close", self._close), 1)
+        layout_buttons.add_widget(Button("Compact", self._compact_history), 0)
+        layout_buttons.add_widget(Button("Reset", self._reset_agent), 1)
+        layout_buttons.add_widget(Button("Close", self._close), 2)
 
         self.fix()
+
+    def _compact_history(self):
+        if self._is_thinking: return
+
+        self._is_thinking = True
+        self.history_text.value += "[System]: Generating summary and compacting history...\n\n"
+
+        def _background_compact():
+            try:
+                resp = self.agent.compact_history()
+                self._pending_response = resp
+            except Exception as e:
+                self._pending_response = f"Error during compaction: {str(e)}"
+
+        threading.Thread(target=_background_compact, daemon=True).start()
 
     def _load_available_models(self):
         # Only relevant for Ollama

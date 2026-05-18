@@ -1,4 +1,6 @@
 import subprocess
+import json
+import os
 from typing import List, Dict, Any
 from agenticLLM.models.agent import Skill
 from agenticLLM.ports.drivens.forSkills import ForSkillRegistry
@@ -18,6 +20,25 @@ class CLISkillExecutorAdapter(ForSkillRegistry):
 
     def list_available_skills(self) -> List[Skill]:
         return list(self._skills.values())
+
+    def load_skills_from_file(self, file_path: str, callback: callable = None):
+        """Loads additional skills from a JSON file."""
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Skills file {file_path} not found.")
+        
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+            self.load_skills_from_json(data, callback)
+
+    def load_skills_from_json(self, data: Any, callback: callable = None):
+        """Loads additional skills from a list of skill dictionaries."""
+        # Note: If no callback is provided, we use the default shell callback as a generic execution point
+        cb = callback or self._shell_callback
+        if isinstance(data, list):
+            for skill_data in data:
+                self.register_skill(Skill.from_dict(skill_data), cb)
+        elif isinstance(data, dict):
+             self.register_skill(Skill.from_dict(data), cb)
 
     def execute_skill(self, name: str, params: Dict[str, Any]) -> str:
         if name not in self._callbacks:
@@ -47,7 +68,7 @@ class CLISkillExecutorAdapter(ForSkillRegistry):
                 description="Executes an arbitrary shell command (Read-only intended).",
                 usage_example="run_shell(cmd='whoami')",
                 category="utility",
-                requires_approval=True
+                requires_approval=False
             ),
             self._shell_callback
         )

@@ -51,18 +51,24 @@ class AgentUseCase(ForAgentInteraction):
                 return assistant_msg.content
             
             # 3. Find the tool to see if it requires approval
-            tool_name = assistant_msg.name or "" # Some LLMs put name in Message, others in tool_calls
-            # (In a real implementation, we'd handle multiple tool calls and proper parsing)
-            
+            tool_name = assistant_msg.name or ""
             target_tool = next((t for t in self.state.available_tools if t.name == tool_name), None)
             
-            # Dummy arguments for simulation (should come from LLM)
-            arguments = {} 
-            try:
-                # Assuming content might contain JSON arguments if tool_call_id is set
-                arguments = json.loads(assistant_msg.content)
-            except:
-                pass
+            # Get arguments from new field or fallback to content
+            arguments = assistant_msg.tool_arguments or {}
+            if not arguments and assistant_msg.content:
+                try:
+                    arguments = json.loads(assistant_msg.content)
+                except:
+                    pass
+
+            # Check for duplicate identical tool calls in the last few messages to avoid infinite loops
+            # If the model repeats the exact same call with the exact same args immediately, it's stuck.
+            if len(self.state.history) > 3:
+                last_tool_msgs = [m for m in self.state.history[-4:-1] if m.role == "assistant" and m.tool_call_id]
+                for prev in last_tool_msgs:
+                    if prev.name == tool_name and prev.tool_arguments == arguments:
+                         return f"Agent stuck in a loop calling {tool_name}. Stopping to avoid resource waste."
 
             if target_tool and target_tool.requires_approval:
                 self.state.pending_action = PendingAction(
@@ -103,6 +109,64 @@ class AgentUseCase(ForAgentInteraction):
 
     def get_history(self) -> List[Message]:
         return self.state.history
+
+    def get_tools_json(self) -> str:
+        import json
+        return json.dumps([t.to_dict() for t in self.state.available_tools], indent=2)
+
+    def compact_history(self) -> str:
+        """
+        Generates a summary of the current history, saves it to RAG,
+        and resets the history to just the summary to save context space.
+        """
+        if len(self.state.history) <= 2: # System + 1 message isn't worth compacting
+            return "History is too short to compact."
+
+        # 1. Prepare summarization prompt
+        history_str = ""
+        for msg in self.state.history:
+            if msg.role == "system": continue
+            role = "User" if msg.role == "user" else "Assistant"
+            if msg.role == "tool": role = "Tool Output"
+            history_str += f"{role}: {msg.content}\n"
+
+        summary_prompt = (
+            "You are a summarization assistant. Provide a concise but comprehensive summary "
+            "of the following penetration testing conversation. Focus on: \n"
+            "1. Discovered assets and vulnerabilities.\n"
+            "2. Actions performed and their results.\n"
+            "3. Current progress in the Cyber Kill Chain.\n\n"
+            f"CONVERSATION HISTORY:\n{history_str}\n\n"
+            "SUMMARY:"
+        )
+
+        # 2. Get summary from LLM (using a clean history for the summarization call)
+        temp_history = [Message(role="system", content=summary_prompt)]
+        summary_msg = self.llm.generate_response(temp_history, [])
+        summary_text = summary_msg.content
+
+        # 3. Save to RAG
+        from agenticLLM.models.agent import OperationalMemory
+        memory = OperationalMemory(
+            content=f"Conversation Summary: {summary_text}",
+            source="history_compaction",
+            metadata={"compacted_at": len(self.state.history)}
+        )
+        self.memory_repo.save_memory(memory)
+
+        # 4. Reset history
+        compacted_context = (
+            "The following is a summary of the previous conversation context. "
+            "Use this to continue the operation efficiently:\n\n"
+            f"{summary_text}"
+        )
+        
+        self.state.history = [
+            Message(role="system", content=self.config.system_prompt),
+            Message(role="system", content=compacted_context)
+        ]
+
+        return "History compacted and saved to operational memory."
 
     def reset(self):
         self.state.history = [Message(role="system", content=self.config.system_prompt)]

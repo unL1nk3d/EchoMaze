@@ -30,7 +30,8 @@ class BaseLLMAdapter(ForLLMProvider, ABC):
             if tool_call:
                 response.tool_call_id = f"react_{tool_call['name']}"
                 response.name = tool_call['name']
-                response.content = json.dumps(tool_call['arguments'])
+                response.tool_arguments = tool_call['arguments']
+                # We keep the original response.content as it is (likely containing the thought + JSON)
             
             return response
         else:

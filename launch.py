@@ -294,6 +294,8 @@ Examples:
     agent_parser.add_argument('--memory', choices=['in_memory', 'hyperdb'], default=os.getenv("AGENT_MEMORY", "in_memory"), help='RAG memory type (default: in_memory)')
     agent_parser.add_argument('--react', action='store_true', help='Force ReAct mode (manual tool parsing from text)')
     agent_parser.add_argument('--ask', type=str, help='Ask a question to the agent')
+    agent_parser.add_argument('--load-tools', type=str, help='Path to JSON file with tool definitions')
+    agent_parser.add_argument('--load-skills', type=str, help='Path to JSON file with skill definitions')
     agent_parser.add_argument('--ui', action='store_true', help='Launch UI with this agent configuration')
 
     args = parser.parse_args(argv)
@@ -381,6 +383,22 @@ Examples:
     
     # agent subcommand interaction
     if args.command == 'agent':
+        if args.load_tools:
+            check_restriction()
+            try:
+                generic.agent_usecase.tools_executor.load_tools_from_file(args.load_tools)
+                print(f"[+] Loaded tools from {args.load_tools}")
+            except Exception as e:
+                print(f"[!] Error loading tools: {e}")
+
+        if args.load_skills:
+            check_restriction()
+            try:
+                generic.agent_usecase.skills_registry.load_skills_from_file(args.load_skills)
+                print(f"[+] Loaded skills from {args.load_skills}")
+            except Exception as e:
+                print(f"[!] Error loading skills: {e}")
+
         if args.ask:
             check_restriction()
             print(f"[*] Agent ({agent_provider}, RAG: {agent_memory}) is thinking...")

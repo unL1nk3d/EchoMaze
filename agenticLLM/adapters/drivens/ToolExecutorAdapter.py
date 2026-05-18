@@ -1,4 +1,5 @@
 import json
+import os
 from typing import List, Dict, Any
 from agenticLLM.models.agent import Tool
 from agenticLLM.ports.drivens.forLLMAndTools import ForToolExecution
@@ -99,7 +100,44 @@ class SystemToolExecutorAdapter(ForToolExecution):
             }
         ))
 
-        # 3. Dynamic Skills
+        # 4. Active Pentesting Tools
+        self._tools_cache.append(Tool(
+            name="run_nmap_scan",
+            description="Runs a real nmap scan on a target IP or network. Requires nmap installed on system.",
+            parameters={
+                "type": "object", 
+                "properties": {
+                    "target": {"type": "string", "description": "IP or network range (e.g. 192.168.1.1 or 192.168.1.0/24)"},
+                    "arguments": {"type": "string", "description": "Nmap arguments (e.g. -sV -Pn)", "default": "-F"}
+                },
+                "required": ["target"]
+            },
+            requires_approval=True
+        ))
+        self._tools_cache.append(Tool(
+            name="import_nmap_results",
+            description="Imports results from an existing greppable nmap file (.gnmap).",
+            parameters={
+                "type": "object", 
+                "properties": {
+                    "filepath": {"type": "string", "description": "Path to the .gnmap file"}
+                },
+                "required": ["filepath"]
+            }
+        ))
+        self._tools_cache.append(Tool(
+            name="get_tactical_advice",
+            description="Get OpSec tactical advice for a specific service or noise level.",
+            parameters={
+                "type": "object", 
+                "properties": {
+                    "service": {"type": "string", "description": "Service name (e.g. smb, http)"},
+                    "noise_score": {"type": "number", "description": "Current noise score"}
+                }
+            }
+        ))
+
+        # 5. Dynamic Skills
         if self.skills_registry:
             skills = self.skills_registry.list_available_skills()
             for skill in skills:
@@ -112,6 +150,23 @@ class SystemToolExecutorAdapter(ForToolExecution):
 
     def list_tools(self) -> List[Tool]:
         return self._tools_cache
+
+    def load_tools_from_file(self, file_path: str):
+        """Loads additional tools from a JSON file."""
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Tools file {file_path} not found.")
+        
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+            self.load_tools_from_json(data)
+
+    def load_tools_from_json(self, data: Any):
+        """Loads additional tools from a list of tool dictionaries."""
+        if isinstance(data, list):
+            for tool_data in data:
+                self._tools_cache.append(Tool.from_dict(tool_data))
+        elif isinstance(data, dict):
+             self._tools_cache.append(Tool.from_dict(data))
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> str:
         # Handle Skills
@@ -218,4 +273,55 @@ class SystemToolExecutorAdapter(ForToolExecution):
             self.generic_model.agent_usecase.memory_repo.save_memory(memory)
             return f"Cyber Kill Chain phase updated to {phase} for {ip}."
         
+        elif name == "run_nmap_scan":
+            target = arguments.get("target")
+            args = arguments.get("arguments", "-F")
+            if not target: return "Missing target IP or network."
+            
+            import subprocess
+            output_file = f"nmap_{target.replace('/', '_')}.gnmap"
+            full_command = f"nmap {args} -oG {output_file} {target}"
+            
+            try:
+                # Run the scan
+                process = subprocess.run(full_command, shell=True, capture_output=True, text=True, timeout=300)
+                if process.returncode != 0:
+                    return f"Nmap scan failed: {process.stderr}"
+                
+                # Import the results automatically
+                if self.generic_model.cmd and self.generic_model.cmd.commands:
+                    self.generic_model.cmd.commands.import_from_nmap_scan_file(output_file)
+                    return f"Scan completed and results imported from {output_file}.\nOutput Snippet: {process.stdout[:200]}..."
+                return f"Scan completed but could not import results (Commands not linked)."
+            except Exception as e:
+                return f"Error running nmap: {str(e)}"
+
+        elif name == "import_nmap_results":
+            filepath = arguments.get("filepath")
+            if not filepath: return "Missing filepath."
+            if not os.path.exists(filepath): return f"File {filepath} not found."
+            
+            try:
+                if self.generic_model.cmd and self.generic_model.cmd.commands:
+                    results = self.generic_model.cmd.commands.import_from_nmap_scan_file(filepath)
+                    return f"Successfully imported results for {len(results)} hosts from {filepath}."
+                return "Commands not linked."
+            except Exception as e:
+                return f"Error importing results: {str(e)}"
+
+        elif name == "get_tactical_advice":
+            service = arguments.get("service")
+            score = arguments.get("noise_score")
+            
+            advice = []
+            repo = self.generic_model.repo.repository
+            if hasattr(repo, 'tactical_suggestions'):
+                ts = repo.tactical_suggestions
+                if score is not None:
+                    advice.append(ts.get_noise_advice(int(score)))
+                if service:
+                    advice.extend(ts.suggest_for_service(service))
+                return "\n".join(advice) if advice else "No specific advice available for these parameters."
+            return "Tactical suggestions engine not available."
+
         return f"Tool {name} not found."
