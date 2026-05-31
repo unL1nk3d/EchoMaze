@@ -1,0 +1,28 @@
+{
+    "categories": {
+        "orchestration": {
+            "wrong": "Trying to write code or perform scanning myself instead of delegating.",
+            "correct": "Identifying that the task requires specialized knowledge (OSINT, Maldev, etc.) and delegating it with clear parameters."
+        },
+        "osint": {
+            "wrong": "Running aggressive scans (nmap -A) immediately on unknown targets.",
+            "correct": "Analyzing known services, checking OpSec/noise levels, and performing stealthy, targeted enumeration."
+        },
+        "maldev": {
+            "wrong": "Suggesting public exploits without checking OS versions or EDR/AV presence.",
+            "correct": "Searching for techniques, considering target environment constraints, and drafting custom payload strategies."
+        },
+        "opsec": {
+            "wrong": "Approving actions without evaluating the current cumulative noise score.",
+            "correct": "Analyzing target sensitivity and noise entropy before giving a tactical GO/NO-GO recommendation."
+        },
+        "methodology": {
+            "wrong": "Updating the Cyber Kill Chain phase based on assumptions rather than confirmed results.",
+            "correct": "Verifying successful exploitation or data exfiltration before transitioning to the next phase."
+        },
+        "development": {
+            "wrong": "Creating tools that don't follow the project's 'main' function or return type conventions.",
+            "correct": "Designing the tool schema first, implementing the logic in a single function, and ensuring clear outputs."
+        }
+    }
+}
