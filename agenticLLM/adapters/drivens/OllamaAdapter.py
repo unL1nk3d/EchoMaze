@@ -11,7 +11,7 @@ class OllamaAdapter(BaseLLMAdapter):
     """
     Adapter for Ollama API, allowing EchoMaze to use local models via Ollama.
     """
-    def __init__(self, model_name: str = "deepseek-r1:7b", base_url: str = "http://localhost:11434", use_react: bool = False):
+    def __init__(self, model_name: str = "", base_url: str = "http://localhost:11434", use_react: bool = False):
         super().__init__(use_react=use_react)
         self.model_name = model_name
         self.base_url = base_url

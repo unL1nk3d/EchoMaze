@@ -2232,3 +2232,124 @@ que haya una API expuesta que pueda consumir para consultar todas las funciones 
 
   Estas mejoras garantizan que la cadena de comunicación entre el modelo, la herramienta y el usuario no se rompa, independientemente de si estás usando herramientas nativas u orquestación manual.
 
+  He modificado agenticLLM\adapters\drivens\ToolExecutorAdapter.py para implementar un mecanismo de auto-detección que:
+
+   1. Busca funciones nuevas definidas tras ejecutar el script.
+   2. Prioriza llamar a una función que tenga el mismo nombre que la herramienta (sanitizado).
+   3. Si solo hay una función definida, la llama automáticamente.
+   4. Si hay varias, intenta llamar a una función llamada main.
+   5. Pasa los argumentos de la herramienta como parámetros nombrados (**arguments).
+
+  Esta mejora permite que herramientas como el decodificador de Base64 que mencionaste funcionen directamente sin necesidad de cambios adicionales en su código. He verificado la solución con pruebas unitarias
+  que cubren diversos escenarios de ejecución
+
+
+  ✦ El problema de la "alucinación" en tareas como el descubrimiento de dominios (OSINT) se debe a que, actualmente, el agente está intentando razonar sobre datos que no tiene o usando herramientas que son
+  demasiado genéricas.
+
+  Aquí te presento las áreas de mejora críticas para que el agente pase de "alucinar" a ser operativo:
+
+  1. Herramientas OSINT Reales (Missing Tools)
+  Actualmente, el agente tiene run_nmap_scan, pero para un dominio como cryptii.com, necesita herramientas específicas de resolución y enumeración que no existen en su ToolExecutorAdapter.
+   * Mejora: Implementar herramientas de dns_enumeration, whois_lookup, y subdomain_discovery (usando librerías como dnspython o wrappers de subfinder/assetfinder).
+   * Por qué ayuda: Si el agente tiene una herramienta que retorna datos reales de DNS, dejará de inventar subdominios porque tendrá "evidencia" en su contexto.
+
+  2. Acceso a Internet (Web Search/Scraping)
+  Los LLMs están limitados a su fecha de corte de entrenamiento. Para investigar un dominio u objetivo nuevo, el agente está "ciego".
+   * Mejora: Crear una herramienta web_search (usando DuckDuckGo API o SearXNG) y una herramienta fetch_url_content.
+   * Por qué ayuda: El agente podrá buscar noticias, perfiles de LinkedIn o tecnologías expuestas del objetivo en tiempo real antes de proponer un plan.
+
+  3. Refuerzo del bucle "Observation -> Action"
+  A veces el agente ve un error o un resultado vacío y, en lugar de corregir, "asume" que tuvo éxito e inventa el siguiente paso.
+   * Mejora: Ajustar el System Prompt para obligar al agente a validar cada observación. Si la herramienta retorna null o error, debe intentar un enfoque diferente en lugar de saltar a la siguiente fase del
+     Kill Chain.
+
+  4. Memoria de Trabajo vs. Memoria RAG
+  A veces el agente olvida lo que descubrió hace 3 turnos debido a la ventana de contexto.
+   * Mejora: Automatizar el guardado en operational_memory. Cada vez que una herramienta de descubrimiento (nmap, dns) retorna éxito, el sistema debería pre-procesar ese resultado y guardarlo en la base de
+     datos vectorial (RAG) sin que el agente tenga que llamar a add_to_operational_memory manualmente.
+
+  5. Especialización de Modelos (Small vs Large)
+  Si estás usando deepseek-r1:7b localmente, es un modelo excelente pero puede tener dificultades con esquemas JSON complejos.
+   * Mejora: Usar un modelo con mayor capacidad de seguimiento de instrucciones (como llama3.1:8b o versiones más grandes si el hardware lo permite) específicamente para el rol de Orquestador, dejando a
+     DeepSeek (por su capacidad de razonamiento/chain-of-thought) para el rol de Maldev o Tool Creator.
+
+  Próximo paso recomendado:
+  Podríamos empezar por desarrollar una herramienta de OSINT real (usando el agente tool_creator) que realice búsquedas DNS y WHOIS reales, para que cuando le pidas investigar un dominio, el agente tenga datos
+  verídicos sobre los que trabajar.
+
+
+  antes de empezar a desarollar herramientas especificas me gustaria que algunas herramientas tuvieran categorias, de tal forma que un agente dado no pueda usar una herramienta determinada y se le obligue a
+   delegar con mas frecuencia las acciones que no puede realizar, pienso que eso podria ayudar a los problemas de alucinacion ya que por ejemplo si le pides al agente kill_chain que cree una herramienta la
+   termina creando sin delegar la accion a tool creator, esta bien que para ello exista el agente orquestador que delegara todas las acciones, pero, como tal que sucederia si un agente dado quisiera delegar
+   una accion a otro sin que fueran el agente orquestador, como deberiamos resolver esta problematica ?
+   
+✦ He implementado un sistema de Categorización de Herramientas y Restricción por Persona que resuelve el problema de la alucinación forzando la delegación técnica.
+
+  Cómo funciona la solución:
+
+   1. Herramientas con Categorías: Ahora cada herramienta (nmap, creación de tools, análisis OpSec) pertenece a una categoría (ej: discovery, development, analysis).
+   2. Filtro por Persona: He modificado el ToolExecutorAdapter y el AgentUseCase para que un agente solo vea las herramientas que tiene permitido usar.
+       * Ejemplo: El agente kill_chain ya no "ve" la herramienta create_custom_tool. Al no tenerla disponible en su contexto, el modelo ya no puede intentar usarla por su cuenta.
+   3. Delegación Forzada: Al restringir las herramientas, el agente se ve obligado mecánicamente a usar delegate_to_agent cuando necesita una acción fuera de su alcance.
+   4. Colaboración Directa (P2P): He actualizado los prompts para que todos los agentes conozcan el Directorio de Especialistas. Esto permite que cualquier agente delegue a otro directamente sin pasar siempre
+      por el orquestador:
+       * osint puede delegar a tool_creator si necesita un script.
+       * maldev puede delegar a osint si necesita datos de red.
+       * opsec puede delegar a kill_chain para marcar una fase del ataque.
+
+  Mapa de Permisos Implementado:
+
+   * osint: Solo ve herramientas de descubrimiento (discovery).
+   * maldev: Solo ve herramientas de explotación y búsqueda de técnicas (exploitation/methodology).
+   * tool_creator: Solo ve herramientas de desarrollo (development).
+   * opsec: Solo ve herramientas de análisis de riesgo (analysis).
+   * kill_chain: Solo ve herramientas de metodología (methodology).
+   * orchestrator: Ve herramientas de orquestación y generales.
+
+  Este cambio estructural asegura que cada agente se ma
+
+
+  ###
+
+  
+  
+  
+ Para lograr que los agentes piensen de forma más profunda y evitar respuestas superficiales o impulsivas, puedes implementar varias estrategias arquitectónicas y de prompting. Aquí te sugiero las más
+  efectivas:
+
+  1. Implementación de "Chain of Thought" (CoT) Forzado
+  Actualmente, los modelos a menudo saltan directamente a la herramienta. Puedes modificar el AgentUseCase para obligar al agente a seguir un proceso de pensamiento estructurado antes de generar cualquier JSON
+  de herramienta.
+   * Sugerencia: En el prompt del sistema, define una estructura obligatoria como: [ANÁLISIS] -> [HIPÓTESIS] -> [PLAN] -> [ACCIÓN].
+   * Efecto: Al obligar al modelo a escribir sus razones antes de actuar, la probabilidad de que detecte un error en su propia lógica aumenta drásticamente.
+
+  2. Bucle de Auto-Crítica (Self-Reflection)
+  Introducir una etapa donde el agente revisa su propio plan antes de ejecutarlo.
+   * Sugerencia: Antes de procesar una tool_call, el agente podría realizar una iteración interna de "Crítica": "¿Es esta la herramienta más silenciosa (OpSec)? ¿Tengo los argumentos necesarios?".
+   * Efecto: Reduce errores de "dedo" en los argumentos de las funciones y mejora el cumplimiento de la metodología.
+
+  3. Sistema de "Pensamiento en Capas" (Multi-Prompting)
+  En lugar de un solo paso de razonamiento, dividir la tarea.
+   * Sugerencia:
+       * Capa 1 (Estratega): Analiza el objetivo y decide la táctica.
+       * Capa 2 (Implementador): Traduce esa táctica a llamadas de herramientas específicas.
+   * Efecto: El "Implementador" no tiene que preocuparse por el "por qué", solo por el "cómo", lo que reduce la carga cognitiva del modelo.
+
+  4. Uso de Modelos con Razonamiento Nativo (R1 / O1)
+  Si estás usando modelos como DeepSeek-R1 u OpenAI o1, estos ya tienen un proceso de pensamiento interno.
+   * Sugerencia: Asegúrate de que el adaptador (OllamaAdapter) no descarte el contenido entre las etiquetas <think>...</think>, sino que lo procese para alimentar la trazabilidad que acabamos de crear.
+   * Efecto: Aprovechas la computación adicional que estos modelos dedican al razonamiento antes de dar una respuesta.
+
+  5. Inyección de "Dudas Metódicas" en el Contexto
+  A veces el agente confía demasiado en sus alucinaciones.
+   * Sugerencia: En el prompt, inclúyele una instrucción de "Verificación de Hechos": "Si el dato no proviene de una herramienta de descubrimiento, trátalo como una suposición y verifícalo antes de actuar".
+   * Efecto: Cambia la actitud del agente de "lo sé todo" a "soy un investigador que necesita pruebas".
+
+  6. Memoria Episódica de Errores (Few-Shot)
+  El agente no aprende de sus errores en la misma sesión si no se le señala.
+   * Sugerencia: Inyectar en el contexto ejemplos de "Pensamiento Erróneo vs. Pensamiento Profundo" relacionados con pentesting.
+   * Efecto: El modelo imita el patrón de razonamiento de los ejemplos de alta calidad.
+
+  ¿Cuál de estas direcciones te parece más interesante para explorar primero? La más rápida de implementar suele ser el CoT Forzado (1), pero la más potente para orquestación compleja es el Bucle de
+  Auto-Crítica (2).

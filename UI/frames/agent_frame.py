@@ -9,8 +9,8 @@ class AgentDashboardFrame(Frame):
     def __init__(self, screen: Screen, model):
         super(AgentDashboardFrame, self).__init__(
             screen,
-            screen.height * 3 // 4,
-            screen.width * 3 // 4,
+            screen.height,# * 3 // 4,
+            screen.width, #* 3 // 4,
             title="EchoMaze AI Agent",
             can_scroll=True,
             reduce_cpu=False # Allow continuous background update for thinking
@@ -25,6 +25,9 @@ class AgentDashboardFrame(Frame):
 
         self.history_text = TextBox(height=13, label="Conversation:", name="history", as_string=True, line_wrap=True)
         self.history_text.readonly = True
+
+        self.trace_text = TextBox(height=13, label="Trace / Checkpoints:", name="trace", as_string=True, line_wrap=True)
+        self.trace_text.readonly = True
         
         self.input_text = Text(label="Ask AI:", name="user_input")
         
@@ -80,6 +83,7 @@ class AgentDashboardFrame(Frame):
         
         self._refresh_agent_info()
         self._refresh_history()
+        self._refresh_trace()
         self._load_available_models()
 
     def _refresh_agent_info(self):
@@ -98,10 +102,12 @@ class AgentDashboardFrame(Frame):
         layout_config.add_widget(Divider(), 1)
         layout_config.add_widget(Divider(), 2)
 
-        layout_history = Layout([100])
+        layout_history = Layout([70, 30])
         self.add_layout(layout_history)
-        layout_history.add_widget(self.history_text)
-        layout_history.add_widget(Divider())
+        layout_history.add_widget(self.history_text, 0)
+        layout_history.add_widget(self.trace_text, 1)
+        layout_history.add_widget(Divider(), 0)
+        layout_history.add_widget(Divider(), 1)
 
         layout_input = Layout([80, 20])
         self.add_layout(layout_input)
@@ -177,17 +183,43 @@ class AgentDashboardFrame(Frame):
 
     def update(self, frame_no):
         # Polling check for background response
-        if self._is_thinking and self._pending_response is not None:
-            response = self._pending_response
-            self._pending_response = None
-            self._is_thinking = False
-            
-            if "[WAITING_FOR_APPROVAL]" in response:
-                self._ask_for_approval()
-            
-            self._refresh_history()
+        if self._is_thinking:
+            self._refresh_trace()
+            if self._pending_response is not None:
+                response = self._pending_response
+                self._pending_response = None
+                self._is_thinking = False
+                
+                if "[WAITING_FOR_APPROVAL]" in response:
+                    self._ask_for_approval()
+                
+                self._refresh_history()
             
         super(AgentDashboardFrame, self).update(frame_no)
+
+    def _refresh_trace(self):
+        try:
+            trace = self.agent.get_trace()
+            formatted_trace = ""
+            for step in trace:
+                stage = step.get("stage", "UNKNOWN")
+                content = step.get("content", "")
+                # Create a "checkpoint" visual style
+                bullet = "●" # Checkpoint bullet
+                formatted_trace += f"{bullet} [{stage}]\n  {content[:100]}...\n\n"
+            
+            self.trace_text.value = formatted_trace
+        except:
+            pass
+
+    def _reset_agent(self):
+        self.agent.reset()
+        # Also clear traces in TraceManager if possible
+        if hasattr(self.agent, 'trace_manager'):
+            self.agent.trace_manager.clear_traces()
+        self._refresh_history()
+        self._refresh_trace()
+        self._scene.add_effect(PopUpDialog(self._screen, "Agent history and traces cleared", ["OK"]))
 
     def process_event(self, event):
         return super(AgentDashboardFrame, self).process_event(event)
@@ -293,11 +325,6 @@ class AgentDashboardFrame(Frame):
             msg, 
             [("Approve", _on_approve), ("Reject", _on_reject)]
         ))
-
-    def _reset_agent(self):
-        self.agent.reset()
-        self._refresh_history()
-        self._scene.add_effect(PopUpDialog(self._screen, "Agent history cleared", ["OK"]))
 
     def _refresh_history(self):
         history = self.agent.get_history()

@@ -17,7 +17,7 @@ class AgentManagerUseCase(ForAgentManagement):
     def _load_personas_from_manager(self) -> Dict[str, AgentConfig]:
         personas = {}
         for key in self.prompt_manager.list_keys():
-            personas[key] = AgentConfig(system_prompt=self.prompt_manager.get_prompt(key))
+            personas[key] = AgentConfig(persona_name=key, system_prompt=self.prompt_manager.get_prompt(key))
         return personas
 
     def create_agent(self, name: str, persona: str = "general", provider: Optional[str] = None, tools_file: Optional[str] = None) -> ForAgentInteraction:
@@ -29,14 +29,15 @@ class AgentManagerUseCase(ForAgentManagement):
         
         # Refresh personas in case PromptManager was updated
         self._personas = self._load_personas_from_manager()
-        config = self._personas.get(persona, AgentConfig())
+        config = self._personas.get(persona, AgentConfig(persona_name=persona))
         
         # Use the existing factory to get an agent instance
         agent = get_agent_api(
             tunnels_api=self.tunnels_api,
             llm_provider=None, 
             generic_model=self.generic_model,
-            provider_type=active_provider
+            provider_type=active_provider,
+            name=name
         )
         
         # Override the agent's config with the persona's config

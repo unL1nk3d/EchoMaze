@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import List, Dict, Any, Optional
 from agenticLLM.models.agent import Message, Tool, AgentState, AgentConfig, PendingAction
 from agenticLLM.ports.drivers.forAgentInteraction import ForAgentInteraction
@@ -7,10 +8,14 @@ from agenticLLM.ports.drivens.forOperationalMemory import ForOperationalMemoryRe
 from agenticLLM.ports.drivens.forSkills import ForSkillRegistry
 
 from agenticLLM.core.agent_logger import get_logger
+from agenticLLM.core.trace_manager import TraceManager
 
 class AgentUseCase(ForAgentInteraction):
-    def __init__(self, llm: ForLLMProvider, tools: ForToolExecution, memory_repo: ForOperationalMemoryRepository, skills: ForSkillRegistry, config: AgentConfig = None):
+    def __init__(self, llm: ForLLMProvider, tools: ForToolExecution, memory_repo: ForOperationalMemoryRepository, skills: ForSkillRegistry, config: AgentConfig = None, agent_name: str = "default"):
         self.logger = get_logger()
+        self.trace_manager = TraceManager()
+        self.agent_name = agent_name
+        self._session_start = datetime.now()
         self.llm = llm
         self.tools_executor = tools
         self.memory_repo = memory_repo
@@ -53,8 +58,8 @@ class AgentUseCase(ForAgentInteraction):
         max_iterations = 8 # Increased slightly
         for i in range(max_iterations):
             self.logger.debug(f"Loop iteration {i+1}/{max_iterations}")
-            # Refresh available tools from executor to include any tools created during the session
-            self.state.available_tools = self.tools_executor.list_tools()
+            # Refresh available tools from executor with persona-based filtering
+            self.state.available_tools = self.tools_executor.list_tools(persona=self.config.persona_name)
 
             # 1. Get response from LLM
             assistant_msg = self.llm.generate_response(self.state.history, self.state.available_tools)
@@ -66,9 +71,38 @@ class AgentUseCase(ForAgentInteraction):
 
             self.state.history.append(assistant_msg)
             
+            # TRACE: Reasoning or Tool Intent
+            if assistant_msg.content:
+                content = assistant_msg.content
+                # Detect reflection blocks for Orchestrator (English & Spanish)
+                reflection_mapped = False
+                reflection_tags = [
+                    ("[THOUGHT]", "PLANNING"), 
+                    ("[PENSAMIENTO]", "PLANNING"),
+                    ("[SELF-CRITIQUE]", "CRITIQUE"), 
+                    ("[AUTO-CRITICA]", "CRITIQUE"),
+                    ("[AUTO-CRÍTICA]", "CRITIQUE"),
+                    ("[REVISION]", "REVISION"),
+                    ("[ACTION]", "DECISION")
+                ]
+                for tag, stage_name in reflection_tags:
+                    if tag in content:
+                        import re
+                        pattern = f"{re.escape(tag)}(.*?)(?=\\[|$)"
+                        match = re.search(pattern, content, re.DOTALL)
+                        if match:
+                            block_text = match.group(1).strip()
+                            if block_text:
+                                self.trace_manager.add_step(self.agent_name, stage_name, block_text)
+                                reflection_mapped = True
+                
+                if not reflection_mapped:
+                    self.trace_manager.add_step(self.agent_name, "REASONING", content)
+            
             # 2. Check if it's a tool call
             if not assistant_msg.tool_call_id:
                 self.logger.info(f"Agent finished reasoning: {assistant_msg.content[:50]}...")
+                self.trace_manager.add_step(self.agent_name, "COMPLETE", "Agent finished its task.")
                 return assistant_msg.content
             
             # 3. Find the tool to see if it requires approval
@@ -88,6 +122,10 @@ class AgentUseCase(ForAgentInteraction):
                 except:
                     pass
 
+            # TRACE: Tool Call
+            stage = "DELEGATION" if tool_name == "delegate_to_agent" else "TOOL_CALL"
+            self.trace_manager.add_step(self.agent_name, stage, f"Calling tool {tool_name}", arguments=arguments)
+
             # Check for duplicate identical tool calls to avoid infinite loops
             if len(self.state.history) > 3:
                 last_tool_msgs = [m for m in self.state.history[-6:-1] if m.role == "assistant" and m.tool_call_id]
@@ -98,6 +136,7 @@ class AgentUseCase(ForAgentInteraction):
 
             if target_tool and target_tool.requires_approval:
                 self.logger.info(f"Tool {tool_name} requires operator approval")
+                self.trace_manager.add_step(self.agent_name, "WAITING", f"Tool {tool_name} requires approval.")
                 self.state.pending_action = PendingAction(
                     tool_call_id=assistant_msg.tool_call_id,
                     tool_name=tool_name,
@@ -108,6 +147,10 @@ class AgentUseCase(ForAgentInteraction):
             # 4. Execute tool directly if no approval required
             self.logger.info(f"Executing tool {tool_name} (No approval needed)")
             result = self.tools_executor.execute_tool(tool_name, arguments)
+            
+            # TRACE: Observation
+            self.trace_manager.add_step(self.agent_name, "OBSERVATION", f"Tool {tool_name} returned: {result[:500]}...")
+
             self.state.history.append(Message(role="tool", content=result, tool_call_id=assistant_msg.tool_call_id, name=tool_name))
             
         self.logger.error("Max iterations reached in agent loop")
@@ -130,10 +173,13 @@ class AgentUseCase(ForAgentInteraction):
         self.logger.info(f"User approval for tool {action.tool_name}: {approved}")
         
         if approved:
+            self.trace_manager.add_step(self.agent_name, "APPROVED", f"Tool {action.tool_name} approved.")
             result = self.tools_executor.execute_tool(action.tool_name, action.arguments)
+            self.trace_manager.add_step(self.agent_name, "OBSERVATION", f"Tool {action.tool_name} returned: {result[:500]}...")
             self.state.history.append(Message(role="tool", content=result, tool_call_id=action.tool_call_id, name=action.tool_name))
             return self._run_loop()
         else:
+            self.trace_manager.add_step(self.agent_name, "REJECTED", f"Tool {action.tool_name} rejected.")
             self.state.history.append(Message(role="tool", content="Action rejected by operator.", tool_call_id=action.tool_call_id, name=action.tool_name))
             return self._run_loop()
 
@@ -143,6 +189,10 @@ class AgentUseCase(ForAgentInteraction):
     def get_tools_json(self) -> str:
         import json
         return json.dumps([t.to_dict() for t in self.state.available_tools], indent=2)
+
+    def get_trace(self) -> List[Dict[str, Any]]:
+        steps = self.trace_manager.get_all_steps_since(self.agent_name, self._session_start)
+        return [vars(s) for s in steps]
 
     def compact_history(self) -> str:
         """

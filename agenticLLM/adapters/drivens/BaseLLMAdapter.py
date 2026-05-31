@@ -92,7 +92,7 @@ Wait for the tool output before continuing. If you have the final answer, just r
         if not content:
             return None
             
-        # Look for JSON blocks
+        # 1. Try to find JSON blocks first
         pattern = r"```json\s*(.*?)\s*```"
         matches = re.findall(pattern, content, re.DOTALL)
         
@@ -107,17 +107,27 @@ Wait for the tool output before continuing. If you have the final answer, just r
             except json.JSONDecodeError:
                 continue
         
-        # Fallback: try to find any JSON-like structure if no code blocks
+        # 2. Fallback: Search for the first '{' and the last '}' that contains 'action' and 'action_input'
         try:
-            start = content.find('{')
-            end = content.rfind('}') + 1
-            if start != -1 and end != 0:
-                data = json.loads(content[start:end])
-                if "action" in data and "action_input" in data:
-                    return {
-                        "name": data["action"],
-                        "arguments": data["action_input"]
-                    }
+            # Clean think tags for more reliable fallback parsing
+            clean_content = content
+            if "<think>" in content and "</think>" in content:
+                clean_content = content.split("</think>")[-1]
+
+            # Look for the last JSON-like block (often tools are at the end)
+            start_indices = [i for i, char in enumerate(clean_content) if char == '{']
+            for start in reversed(start_indices):
+                end = clean_content.find('}', start) + 1
+                if end > 0:
+                    try:
+                        data = json.loads(clean_content[start:end])
+                        if "action" in data and "action_input" in data:
+                            return {
+                                "name": data["action"],
+                                "arguments": data["action_input"]
+                            }
+                    except:
+                        continue
         except:
             pass
             

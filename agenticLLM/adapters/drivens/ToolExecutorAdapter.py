@@ -17,7 +17,7 @@ class SystemToolExecutorAdapter(ForToolExecution):
         self._build_tools_cache()
 
     def _build_tools_cache(self):
-        # 1. Tunnels Tools
+        # 1. Tunnels Tools (Category: discovery)
         api_funcs = self.tunnels_api.list_available_functions()
         for func in api_funcs:
             # Sensitive tools disabled for now
@@ -25,34 +25,40 @@ class SystemToolExecutorAdapter(ForToolExecution):
                 name=f"tunnels_{func['name']}",
                 description=func['description'],
                 parameters={},
-                requires_approval=False
+                requires_approval=False,
+                category="discovery"
             ))
         
-        # 2. Database & OpSec Tools (if generic_model is available)
+        # 2. Database & OpSec Tools (Category: analysis)
         self._tools_cache.append(Tool(
             name="get_network_topology",
             description="Returns a list of all IPs and their discovered services.",
-            parameters={}
+            parameters={},
+            category="discovery"
         ))
         self._tools_cache.append(Tool(
             name="get_ip_opsec_analysis",
             description="Returns OpSec score, risk assessment, and suggestions for a specific IP.",
-            parameters={"type": "object", "properties": {"ip": {"type": "string"}}, "required": ["ip"]}
+            parameters={"type": "object", "properties": {"ip": {"type": "string"}}, "required": ["ip"]},
+            category="analysis"
         ))
         self._tools_cache.append(Tool(
             name="get_artifacts",
             description="Lists all security artifacts registered for a specific IP.",
-            parameters={"type": "object", "properties": {"ip": {"type": "string"}}, "required": ["ip"]}
+            parameters={"type": "object", "properties": {"ip": {"type": "string"}}, "required": ["ip"]},
+            category="analysis"
         ))
         self._tools_cache.append(Tool(
             name="search_techniques",
             description="Searches for MITRE ATT&CK techniques or command templates by keyword.",
-            parameters={"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}
+            parameters={"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]},
+            category="methodology"
         ))
         self._tools_cache.append(Tool(
             name="add_to_operational_memory",
             description="Saves a discovery or finding to the operation's context (RAG).",
-            parameters={"type": "object", "properties": {"content": {"type": "string"}}, "required": ["content"]}
+            parameters={"type": "object", "properties": {"content": {"type": "string"}}, "required": ["content"]},
+            category="general"
         ))
         self._tools_cache.append(Tool(
             name="register_action",
@@ -65,7 +71,8 @@ class SystemToolExecutorAdapter(ForToolExecution):
                     "noise_score": {"type": "number"}
                 },
                 "required": ["ip", "command"]
-            }
+            },
+            category="analysis"
         ))
         self._tools_cache.append(Tool(
             name="register_artifact",
@@ -79,12 +86,14 @@ class SystemToolExecutorAdapter(ForToolExecution):
                     "noise_score": {"type": "number"}
                 },
                 "required": ["ip", "filename"]
-            }
+            },
+            category="analysis"
         ))
         self._tools_cache.append(Tool(
             name="get_cyber_kill_chain_status",
             description="Returns the current Cyber Kill Chain phase for a specific IP and its history.",
-            parameters={"type": "object", "properties": {"ip": {"type": "string"}}, "required": ["ip"]}
+            parameters={"type": "object", "properties": {"ip": {"type": "string"}}, "required": ["ip"]},
+            category="methodology"
         ))
         self._tools_cache.append(Tool(
             name="set_cyber_kill_chain_phase",
@@ -99,7 +108,8 @@ class SystemToolExecutorAdapter(ForToolExecution):
                     }
                 },
                 "required": ["ip", "phase"]
-            }
+            },
+            category="methodology"
         ))
 
         # 4. Active Pentesting Tools
@@ -114,7 +124,8 @@ class SystemToolExecutorAdapter(ForToolExecution):
                 },
                 "required": ["target"]
             },
-            requires_approval=False
+            requires_approval=False,
+            category="discovery"
         ))
         self._tools_cache.append(Tool(
             name="import_nmap_results",
@@ -125,7 +136,8 @@ class SystemToolExecutorAdapter(ForToolExecution):
                     "filepath": {"type": "string", "description": "Path to the .gnmap file"}
                 },
                 "required": ["filepath"]
-            }
+            },
+            category="discovery"
         ))
         self._tools_cache.append(Tool(
             name="get_tactical_advice",
@@ -136,14 +148,16 @@ class SystemToolExecutorAdapter(ForToolExecution):
                     "service": {"type": "string", "description": "Service name (e.g. smb, http)"},
                     "noise_score": {"type": "number", "description": "Current noise score"}
                 }
-            }
+            },
+            category="analysis"
         ))
 
         # 6. Orchestration Tools
         self._tools_cache.append(Tool(
             name="get_available_agents",
             description="Lists all specialized agent personas (e.g., osint, maldev) and currently active agent sessions.",
-            parameters={}
+            parameters={},
+            category="orchestration"
         ))
         self._tools_cache.append(Tool(
             name="delegate_to_agent",
@@ -156,7 +170,8 @@ class SystemToolExecutorAdapter(ForToolExecution):
                 },
                 "required": ["agent_persona", "task_description"]
             },
-            requires_approval=False
+            requires_approval=False,
+            category="orchestration"
         ))
 
         self._tools_cache.append(Tool(
@@ -174,7 +189,8 @@ class SystemToolExecutorAdapter(ForToolExecution):
                 },
                 "required": ["name", "description", "parameters_schema", "code"]
             },
-            requires_approval=False
+            requires_approval=False,
+            category="development"
         ))
 
         # 7. Load existing custom tools from disk
@@ -188,11 +204,24 @@ class SystemToolExecutorAdapter(ForToolExecution):
                     name=f"skill_{skill.name}",
                     description=f"{skill.description} Usage: {skill.usage_example}",
                     parameters=skill.parameters_schema or {"type": "object", "properties": {}},
-                    requires_approval=skill.requires_approval
+                    requires_approval=skill.requires_approval,
+                    category="general" # Skills are generally utility
                 ))
 
-    def list_tools(self) -> List[Tool]:
-        return self._tools_cache
+    def list_tools(self, persona: str = "default") -> List[Tool]:
+        """Returns a list of tools available for a specific persona."""
+        persona_map = {
+            "default": ["orchestration", "general"],
+            "orchestrator": ["orchestration", "general"],
+            "osint": ["discovery", "general", "orchestration"],
+            "maldev": ["exploitation", "general", "orchestration"],
+            "opsec": ["analysis", "general", "orchestration"],
+            "kill_chain": ["methodology", "general", "orchestration"],
+            "tool_creator": ["development", "general", "orchestration"]
+        }
+        
+        allowed_categories = persona_map.get(persona, ["general", "orchestration"])
+        return [t for t in self._tools_cache if t.category in allowed_categories]
 
     def load_tools_from_file(self, file_path: str):
         """Loads additional tools from a JSON file."""
@@ -271,6 +300,7 @@ class SystemToolExecutorAdapter(ForToolExecution):
                         "result": None,
                         "print": print 
                     }
+                    initial_keys = set(ctx.keys())
                     
                     try:
                         with open(python_file, 'r', encoding='utf-8') as f:
@@ -284,7 +314,36 @@ class SystemToolExecutorAdapter(ForToolExecution):
                     
                     res_var = ctx.get("result")
                     stdout_val = f_stdout.getvalue().strip()
-                    
+
+                    # IF NO RESULT/STDOUT: Try to find a function to call automatically
+                    if res_var is None and not stdout_val:
+                        new_keys = set(ctx.keys()) - initial_keys
+                        callables = {k: ctx[k] for k in new_keys if callable(ctx[k])}
+                        
+                        target_func = None
+                        # Priority 1: Function name matches tool name
+                        if safe_name in callables:
+                            target_func = callables[safe_name]
+                        # Priority 2: Exactly one function defined
+                        elif len(callables) == 1:
+                            target_func = list(callables.values())[0]
+                        # Priority 3: Function named 'main'
+                        elif "main" in callables:
+                            target_func = callables["main"]
+                        
+                        if target_func:
+                            self.logger.info(f"Auto-detecting function to call: {target_func.__name__}")
+                            try:
+                                # Try calling with keyword arguments from the tool call
+                                res_var = target_func(**arguments)
+                            except TypeError:
+                                # Fallback: try calling without arguments
+                                try:
+                                    res_var = target_func()
+                                except Exception as e:
+                                    self.logger.error(f"Error calling detected function {target_func.__name__}: {e}")
+                            
+                    self.logger.info(f"result: {res_var}  {stdout_val}")
                     final_res = ""
                     if res_var is not None:
                         final_res = str(res_var)
@@ -516,10 +575,20 @@ class SystemToolExecutorAdapter(ForToolExecution):
             if not target_agent:
                 target_agent = self.generic_model.agent_manager.create_agent(agent_name, persona=agent_persona)
             
+            # Reset the specialized agent to ensure it starts with a clean history for the new task
+            target_agent.reset()
+            
             try:
                 # Execute the task through the specialized agent
                 response = target_agent.ask(task)
-                return f"[DELEGATION RESULT FROM {agent_persona.upper()}]:\n{response}"
+                return f"""
+[DELEGATION REPORT FROM {agent_persona.upper()}]
+STATUS: COMPLETED
+FINDINGS:
+{response}
+
+INSTRUCTION FOR ORCHESTRATOR: Process these findings and decide on the next tactical step.
+"""
             except Exception as e:
                 return f"Error during delegation to {agent_persona}: {str(e)}"
 

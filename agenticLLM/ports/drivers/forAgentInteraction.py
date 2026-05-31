@@ -32,3 +32,8 @@ class ForAgentInteraction(ABC):
     def get_tools_json(self) -> str:
         """Returns the available tools in JSON format."""
         pass
+
+    @abstractmethod
+    def get_trace(self) -> List[Dict[str, Any]]:
+        """Returns the execution trace for debugging."""
+        pass

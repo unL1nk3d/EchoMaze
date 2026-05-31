@@ -28,6 +28,7 @@ class Tool:
     parameters: Dict[str, Any] # JSON Schema
     requires_approval: bool = False
     script_type: str = "python" # e.g., 'python', 'powershell', 'cmd', 'bash'
+    category: str = "general" # e.g., 'discovery', 'exploitation', 'development', 'methodology', 'orchestration'
 
     def to_dict(self) -> Dict[str, Any]:
         from dataclasses import asdict
@@ -64,11 +65,12 @@ class AgentConfig:
     model_name: str = "gpt-4o"
     temperature: float = 0.0
     system_prompt: str = ""
+    persona_name: str = "default"
 
     def __post_init__(self):
         if not self.system_prompt:
             from agenticLLM.core.prompt_manager import PromptManager
-            self.system_prompt = PromptManager().get_prompt("default")
+            self.system_prompt = PromptManager().get_prompt(self.persona_name)
 
     def to_dict(self) -> Dict[str, Any]:
         from dataclasses import asdict

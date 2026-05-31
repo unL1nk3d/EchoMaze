@@ -6,7 +6,7 @@ from agenticLLM.adapters.drivens.SkillExecutorAdapter import CLISkillExecutorAda
 from tunnelsManager import get_tunnels_api
 import os
 
-def get_agent_api(tunnels_api=None, llm_provider=None, generic_model=None, provider_type=None, memory_type='in_memory', use_react=None):
+def get_agent_api(tunnels_api=None, llm_provider=None, generic_model=None, provider_type=None, memory_type='in_memory', use_react=None, name="default"):
     """
     Factory to get the Agent API.
     
@@ -31,7 +31,7 @@ def get_agent_api(tunnels_api=None, llm_provider=None, generic_model=None, provi
             llm_provider = LlamaCppAdapter(model_path=model_path, use_react=use_react)
         elif provider_type == 'ollama':
             from agenticLLM.adapters.drivens.OllamaAdapter import OllamaAdapter
-            model_name = os.getenv("OLLAMA_MODEL", "deepseek-r1:7b")
+            model_name = os.getenv("OLLAMA_MODEL", "llama3.1:latest")
             base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
             llm_provider = OllamaAdapter(model_name=model_name, base_url=base_url, use_react=use_react)
         else:
@@ -45,7 +45,7 @@ def get_agent_api(tunnels_api=None, llm_provider=None, generic_model=None, provi
         
     skills_registry = CLISkillExecutorAdapter()
     tool_executor = SystemToolExecutorAdapter(tunnels_api, generic_model, skills_registry)
-    agent = AgentUseCase(llm_provider, tool_executor, memory_repo, skills_registry)
+    agent = AgentUseCase(llm_provider, tool_executor, memory_repo, skills_registry, agent_name=name)
     
     return agent
 

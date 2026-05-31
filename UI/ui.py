@@ -43,7 +43,7 @@ def demo(screen,model):
         Scene([ImplantsDashboardFrame(screen, model)], -1, name="implants"),
         Scene([AgentDashboardFrame(screen, model)], -1, name="agent")
     ]
-    screen.play(scenes, stop_on_resize=True, start_scene=scenes[0])
+    screen.play(scenes, stop_on_resize=False, start_scene=scenes[0])
 
 def run_ui(model:GenericModel):
      try:
